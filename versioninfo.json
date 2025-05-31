@@ -1,0 +1,32 @@
+{
+    "FixedFileInfo": {
+        "FileVersion": {
+            "Major": 1,
+            "Minor": 0,
+            "Patch": 0,
+            "Build": 0
+        },
+        "ProductVersion": {
+            "Major": 1,
+            "Minor": 0,
+            "Patch": 0,
+            "Build": 0
+        }
+    },
+    "StringFileInfo": {
+        "CompanyName": "OpenCode",
+        "FileDescription": "OpenCode AI Coding Assistant",
+        "FileVersion": "1.0.0",
+        "InternalName": "opencode",
+        "LegalCopyright": "© 2025 OpenCode. All rights reserved.",
+        "OriginalFilename": "opencode.exe",
+        "ProductName": "OpenCode",
+        "ProductVersion": "1.0.0"
+    },
+    "VarFileInfo": {
+        "Translation": {
+            "LangID": "0409",
+            "CharsetID": "04B0"
+        }
+    }
+}

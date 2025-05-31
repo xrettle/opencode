@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "OpenCode",
+    "version": "1.0.0"
+  },
+  "api": {
+    "endpoint": "http://localhost:8000",
+    "timeout_seconds": 30
+  },
+  "model": {
+    "default": "gpt-4",
+    "alternatives": ["gpt-3.5-turbo", "claude-3"]
+  },
+  "logging": {
+    "level": "info",
+    "file": "logs/opencode.log",
+    "max_size_mb": 10,
+    "max_backups": 3
+  },
+  "ui": {
+    "theme": "dark",
+    "font_size": 12,
+    "show_line_numbers": true
+  }
+}

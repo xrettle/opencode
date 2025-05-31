@@ -1,0 +1,7 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+pydantic==2.6.1
+python-dotenv==1.0.0
+logging==0.4.9.6
+# Optional dependencies - will be installed only if needed
+# vllm==0.3.3 # Uncomment if you need LLM functionality
