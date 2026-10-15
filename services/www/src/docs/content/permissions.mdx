@@ -120,7 +120,9 @@ currently use these actions and resources:
 | `websearch`          | Search query                                                                |
 | `external_directory` | Canonical external directory boundary, normally ending in `/*`              |
 | `<server>_<tool>`    | `*` for an MCP tool; unsupported characters in both names become `_`        |
-| `execute`            | `*`; controls Code Mode availability, while nested tools enforce their rules |
+| `opencode_list_mcp_resources` | MCP server name                                                    |
+| `opencode_read_mcp_resource`  | `<server>:<uri>`                                                   |
+| `execute`            | `*`; a deny removes Code Mode and the tools reached only through it, while nested tools enforce their rules |
 
 For example, allow one skill and deny all other skills:
 
@@ -277,3 +279,17 @@ Review broad approvals and remove those no longer needed.
 
 Clients may attach feedback when rejecting. Non-interactive clients must decide
 how to handle approval requests; configured `deny` rules always remain enforced.
+
+## Policies
+
+A [policy](/policies) can hard-deny a permission check after these rules and saved
+approvals run. It turns `allow` or `ask` into `deny` and never grants access.
+
+```jsonc
+{
+  "policies": [{ "action": "tool.use", "resource": "shell:sudo *", "effect": "deny" }],
+}
+```
+
+Global and Console-managed policies override project configuration, which is how an
+organization blocks a command that a repository would allow.

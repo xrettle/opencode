@@ -85,6 +85,14 @@ export const settings: Setting[] = [
     keywords: ["transcript", "messages", "reads", "searches"],
   },
   {
+    title: "Verbosity",
+    category: "Session",
+    path: ["session", "verbosity"],
+    default: "medium",
+    values: ["low", "medium", "high"],
+    keywords: ["detail", "activity", "summary", "transcript"],
+  },
+  {
     title: "Transcript images",
     category: "Session",
     path: ["session", "image_preview"],
@@ -121,12 +129,11 @@ export const settings: Setting[] = [
     keywords: ["approve", "accept", "permission requests"],
   },
   {
-    title: "Enabled",
+    title: "Mode",
     category: "Tabs",
-    path: ["tabs", "enabled"],
-    default: true,
-    values: [false, true],
-    labels: ["off", "on"],
+    path: ["tabs", "mode"],
+    default: "auto",
+    values: ["off", "on", "auto"],
   },
   {
     title: "Scope",
@@ -283,6 +290,15 @@ export const settings: Setting[] = [
     keywords: ["sound volume", "audio volume"],
   },
   {
+    title: "Release highlights",
+    category: "Alerts",
+    path: ["highlights"],
+    default: true,
+    values: [false, true],
+    labels: ["off", "on"],
+    keywords: ["what's new", "changelog", "release notes"],
+  },
+  {
     title: "Window title",
     category: "Terminal",
     path: ["terminal", "title"],
@@ -383,7 +399,7 @@ export function DialogConfig(props: { current?: string }) {
       filterThreshold={0.7}
       onMove={(option) => setSelected(option.value)}
       onSelect={(option) => void change(1, option.value)}
-      footerHints={[{ title: "←/→", label: "change" }]}
+      footerHints={[{ title: "change", label: "←/→" }]}
       bindings={[
         {
           bind: "left",

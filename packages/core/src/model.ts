@@ -28,6 +28,16 @@ export type Compatibility = Model.Compatibility
 export const Capabilities = Model.Capabilities
 export type Capabilities = Model.Capabilities
 
+/** Merges partial config capabilities onto a base model's capabilities, defaulting unset fields. */
+export const mergeCapabilities = (config: Partial<Capabilities>, base: Capabilities | undefined) => {
+  const fallback = base ?? Capabilities.default()
+  return {
+    tools: config.tools ?? fallback.tools,
+    input: [...(config.input ?? fallback.input)],
+    output: [...(config.output ?? fallback.output)],
+  }
+}
+
 export const Cost = Model.Cost
 
 export const Ref = Model.Ref
@@ -35,6 +45,9 @@ export type Ref = typeof Ref.Type
 
 export const Info = Model.Info
 export type Info = Model.Info
+
+/** Effective provider and model settings used only while constructing a runtime model. */
+export type RuntimeInfo = Omit<Info, "settings"> & { readonly settings?: Provider.Settings }
 
 export type MutableInfo = DeepMutable<Info>
 
@@ -188,9 +201,14 @@ const layer = Layer.effect(
                     ...model,
                     ...(provider?.canonical === undefined ? {} : { canonical: provider.canonical }),
                     package: model.package ?? provider?.package,
-                    compaction: model.compaction ?? provider?.compaction,
-                    transport: model.transport ?? provider?.transport,
-                    settings: Provider.mergeOverlay(provider?.settings, model.settings),
+                    compatibility:
+                      provider?.compatibility === undefined
+                        ? model.compatibility
+                        : { ...provider.compatibility, ...model.compatibility },
+                    settings: Provider.mergeOverlay(
+                      Provider.modelSettings(provider?.settings),
+                      Provider.modelSettings(model.settings),
+                    ),
                     headers: Provider.mergeHeaders(provider?.headers, model.headers),
                     body: Provider.mergeOverlay(provider?.body, model.body),
                   } satisfies Info
@@ -204,7 +222,10 @@ const layer = Layer.effect(
         const all = Array.from(byProvider.values())
           .flatMap((models) => Array.from(models.values()))
           .sort((left, right) => right.time.released - left.time.released)
-        cached = freeze({ data, all, available: all.filter((model) => model.enabled), byProvider }, true)
+        cached = freeze(
+          { data, all, available: preferBigPickle(all.filter((model) => model.enabled)), byProvider },
+          true,
+        )
         return cached
       }
     })
@@ -247,7 +268,7 @@ const layer = Layer.effect(
         const value = yield* read()
         const requested = value.data.defaultModel
         const model = requested && value.byProvider.get(requested.providerID)?.get(requested.modelID)
-        return model?.enabled ? model : value.available[0]
+        return model?.enabled ? model : value.available.find(supportsText)
       }),
       small: Effect.fn("Model.small")(function* (providerID) {
         const value = yield* read()
@@ -267,6 +288,24 @@ const layer = Layer.effect(
 )
 
 export const node = makeLocationNode({ service: Service, layer, deps: [Provider.node, Bus.node, Location.node] })
+
+// Signed out, only free OpenCode models are enabled. Clients default to the first available model, so keep
+// big-pickle ahead of each new free launch instead of letting release order pick it.
+function preferBigPickle(models: Info[]) {
+  const freeOnly = models.every(
+    (model) => model.providerID === Provider.ID.opencode && !model.cost.some((cost) => cost.input > 0),
+  )
+  const pick = freeOnly ? models.find((model) => model.id === "big-pickle") : undefined
+  if (!pick) return models
+  return [pick, ...models.filter((model) => model !== pick)]
+}
+
+export function supportsText(model: Pick<Info, "capabilities">) {
+  return (
+    (model.capabilities.input.length === 0 || model.capabilities.input.some((item) => item.startsWith("text"))) &&
+    (model.capabilities.output.length === 0 || model.capabilities.output.some((item) => item.startsWith("text")))
+  )
+}
 
 export function compatibility(input: unknown): Compatibility | undefined {
   if (typeof input === "string") return { reasoningField: input }

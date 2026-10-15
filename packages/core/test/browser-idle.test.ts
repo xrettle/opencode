@@ -1,5 +1,5 @@
 import { expect } from "bun:test"
-import { Context, Deferred, Effect, Fiber, RcMap, Stream } from "effect"
+import { Clock, Context, Duration, Effect, Fiber, Layer, RcMap, Schedule } from "effect"
 import { Browser } from "@opencode/plugin-browser/rpc"
 import { AppNodeBuilder } from "@opencode/core/effect/app-node-builder"
 import { LayerNode } from "@opencode/util/effect/layer-node"
@@ -21,6 +21,22 @@ import { offlineModels } from "./fixture/models"
 import { tmpdirScoped } from "./fixture/tmpdir"
 import { testEffect } from "./lib/effect"
 
+// LocationActivity measures idleness on this clock. Its sweep still sleeps in real time, but only the test moves the
+// clock past the TTL, so slow plugin activation on a busy machine cannot evict the location before the browser
+// attachment exists, as a short real TTL could.
+const timeToLive = Duration.minutes(1)
+const idle = { millis: 0 }
+const live = Clock.Clock.defaultValue()
+const activityClock: Clock.Clock = {
+  currentTimeMillisUnsafe: () => live.currentTimeMillisUnsafe() + idle.millis,
+  currentTimeMillis: Effect.sync(() => live.currentTimeMillisUnsafe() + idle.millis),
+  currentTimeNanosUnsafe: () => live.currentTimeNanosUnsafe() + BigInt(idle.millis) * 1_000_000n,
+  currentTimeNanos: Effect.sync(() => live.currentTimeNanosUnsafe() + BigInt(idle.millis) * 1_000_000n),
+  monotonicTimeNanosUnsafe: () => live.monotonicTimeNanosUnsafe(),
+  monotonicTimeNanos: live.monotonicTimeNanos,
+  sleep: (duration) => live.sleep(duration),
+}
+
 const it = testEffect(
   AppNodeBuilder.build(
     LayerNode.group([Database.node, Bus.node, Session.node, LocationServiceMap.node, LocationActivity.node]),
@@ -30,7 +46,9 @@ const it = testEffect(
       LocationActivity.node.replace(
         makeGlobalNode({
           service: LocationActivity.Service,
-          layer: LocationActivity.layer({ timeToLive: "2 seconds", sweepInterval: "100 millis" }),
+          layer: LocationActivity.layer({ timeToLive, sweepInterval: "100 millis" }).pipe(
+            Layer.provide(Layer.succeed(Clock.Clock, activityClock)),
+          ),
           deps: [Bus.node, LocationServiceMap.node, SessionExecution.node, SessionStore.node],
         }),
       ),
@@ -51,19 +69,19 @@ it.live(
       const session = yield* sessions.create({ location: ref })
       const rpc = Context.get(context, Rpc.Service).client(Browser.Definition)
       const attachment = { sessionID: session.id, connectionID: crypto.randomUUID() }
-      const attached = yield* Deferred.make<void>()
-      yield* rpc.events.subscribe("control").pipe(
-        Stream.runForEach((event) =>
-          event.data.type === "attached" ? Deferred.succeed(attached, undefined) : Effect.void,
-        ),
-        Effect.forkScoped({ startImmediately: true }),
-      )
+      const state = { ...attachment, state: { tabs: [], focusedTabID: null } }
       const pending = yield* rpc
         .attach({ ...attachment, version: 4 })
         .pipe(Effect.provide(locations.get(ref)), Effect.flip, Effect.forkScoped)
-      yield* Deferred.await(attached)
-      const state = { ...attachment, state: { tabs: [], focusedTabID: null } }
-      yield* rpc.state(state)
+      yield* rpc.state(state).pipe(
+        Effect.retry({
+          while: (error) => "type" in error && error.type === "unavailable",
+          schedule: Schedule.spaced("10 millis"),
+        }),
+        Effect.timeout("5 seconds"),
+      )
+      // The location has now been idle for its whole TTL; the next sweep evicts it.
+      idle.millis += Duration.toMillis(timeToLive)
 
       // Real idle cleanup must end the long-lived request, not leave a second registry behind it.
       expect(yield* Fiber.join(pending).pipe(Effect.timeout("10 seconds"))).toMatchObject({ type: "rpc.unavailable" })
@@ -73,16 +91,14 @@ it.live(
       const replacement = yield* locations.contextEffect(ref)
       yield* Plugin.awaitActivation.pipe(Effect.provideContext(replacement))
       const fresh = Context.get(replacement, Rpc.Service).client(Browser.Definition)
-      const restored = yield* Deferred.make<void>()
-      yield* fresh.events.subscribe("control").pipe(
-        Stream.runForEach((event) =>
-          event.data.type === "attached" ? Deferred.succeed(restored, undefined) : Effect.void,
-        ),
-        Effect.forkScoped({ startImmediately: true }),
-      )
       const resumed = yield* fresh.attach({ ...attachment, version: 4 }).pipe(Effect.forkScoped)
-      yield* Deferred.await(restored)
-      yield* fresh.state(state)
+      yield* fresh.state(state).pipe(
+        Effect.retry({
+          while: (error) => "type" in error && error.type === "unavailable",
+          schedule: Schedule.spaced("10 millis"),
+        }),
+        Effect.timeout("5 seconds"),
+      )
       expect(resumed.pollUnsafe()).toBeUndefined()
       yield* Fiber.interrupt(resumed)
     }),

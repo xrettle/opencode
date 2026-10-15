@@ -1,8 +1,7 @@
-import { TextAttributes } from "@opentui/core"
 import { createMemo, createSignal, For } from "solid-js"
 import { Keymap } from "../context/keymap"
 import { useTheme } from "../context/theme"
-import { useDialog } from "../ui/dialog"
+import { DialogFooter, DialogHeader, DialogLayout, useDialog } from "../ui/dialog"
 import { useRoute } from "../context/route"
 import { useLocal } from "../context/local"
 import { useClipboard } from "../context/clipboard"
@@ -53,40 +52,38 @@ export function DialogDebug() {
   }))
 
   return (
-    <box paddingLeft={2} paddingRight={2} gap={1} paddingBottom={1}>
-      <box flexDirection="row" justifyContent="space-between">
-        <text fg={theme.text.default} attributes={TextAttributes.BOLD}>
-          Debug
-        </text>
-        <text fg={theme.text.subdued} onMouseUp={() => dialog.clear()}>
-          esc
-        </text>
-      </box>
+    <DialogLayout
+      header={<DialogHeader title="Debug" />}
+      footer={
+        <DialogFooter
+          actions={[
+            {
+              title: copied() ? "✓ copied" : "copy",
+              key: "enter",
+              side: "right",
+              color: copied() ? theme.text.feedback.success.base : undefined,
+              onTrigger: copy,
+            },
+          ]}
+        >
+          <text fg={theme.text.muted}>Share this when reporting an issue.</text>
+        </DialogFooter>
+      }
+    >
       {/* No click-to-copy here: releasing a mouse selection must trigger the
           global copy-on-select so users can copy a single value, e.g. the session id. */}
-      <box>
-        <For each={entries()}>
-          {(entry) => (
-            <box flexDirection="row" gap={1}>
-              <text flexShrink={0} fg={theme.text.subdued}>
-                {entry.label.padEnd(10)}
-              </text>
-              <text fg={theme.text.default} wrapMode="word">
-                {entry.value}
-              </text>
-            </box>
-          )}
-        </For>
-      </box>
-      <box flexDirection="row" justifyContent="space-between">
-        <text fg={theme.text.subdued}>Share this when reporting an issue.</text>
-        <text onMouseUp={copy}>
-          <span style={{ fg: copied() ? theme.text.feedback.success.default : theme.text.default }}>
-            <b>{copied() ? "✓ copied" : "copy"}</b>{" "}
-          </span>
-          <span style={{ fg: theme.text.subdued }}>enter</span>
-        </text>
-      </box>
-    </box>
+      <For each={entries()}>
+        {(entry) => (
+          <box flexDirection="row" gap={1}>
+            <text flexShrink={0} fg={theme.text.muted}>
+              {entry.label.padEnd(10)}
+            </text>
+            <text fg={theme.text.base} wrapMode="word">
+              {entry.value}
+            </text>
+          </box>
+        )}
+      </For>
+    </DialogLayout>
   )
 }

@@ -3,7 +3,7 @@ import { TextAttributes } from "@opentui/core"
 import { createEffect, createMemo, createResource, createSignal, onCleanup, onMount, Show } from "solid-js"
 import path from "path"
 import { DialogSelect, dialogSelectContentWidth, type DialogSelectOption } from "../ui/dialog-select"
-import { dialogWidth, useDialog } from "../ui/dialog"
+import { DIALOG_LIST_INSET, dialogWidth, useDialog } from "../ui/dialog"
 import { useClient } from "../context/client"
 import { Keymap } from "../context/keymap"
 import { useTheme } from "../context/theme"
@@ -40,7 +40,7 @@ export function DialogWorkspaces(props: DialogWorkspacesProps) {
   const dialog = useDialog()
   const client = useClient()
   const dimensions = useTerminalDimensions()
-  const theme = useTheme("elevated")
+  const theme = useTheme().surface("dialog")
   const sessionData = useData()
   const route = useRoute()
   const toast = useToast()
@@ -175,18 +175,18 @@ export function DialogWorkspaces(props: DialogWorkspacesProps) {
       return {
         title,
         titleView: isRemoving ? (
-          <span style={{ fg: theme.text.feedback.error.default }}>Deleting {item.location}</span>
+          <span style={{ fg: theme.text.feedback.error.base }}>Deleting {item.location}</span>
         ) : deleting ? (
-          <span style={{ fg: theme.text.action.destructive.default }}>
+          <span style={{ fg: theme.text.action.destructive.base }}>
             Press {shortcuts.get("dialog.move_session.delete")} again to confirm
           </span>
         ) : suffix ? (
           <>
             {visible.slice(0, split)}
-            <span style={{ fg: theme.text.subdued }}>{visible.slice(split)}</span>
+            <span style={{ fg: theme.text.muted }}>{visible.slice(split)}</span>
           </>
         ) : undefined,
-        bg: deleting ? theme.background.action.destructive.default : undefined,
+        bg: deleting ? theme.background.action.destructive.base : undefined,
         value: {
           type: "directory",
           directory: item.location,
@@ -327,7 +327,7 @@ export function DialogWorkspaces(props: DialogWorkspacesProps) {
         title="Worktrees"
         titleView={
           <box flexDirection="row" gap={1}>
-            <text fg={theme.text.default} attributes={TextAttributes.BOLD}>
+            <text fg={theme.text.base} attributes={TextAttributes.BOLD}>
               Worktrees
             </text>
             <Show when={working() || directories.loading || loadedProject.loading}>
@@ -340,26 +340,26 @@ export function DialogWorkspaces(props: DialogWorkspacesProps) {
         options={options()}
         emptyView={
           showError() ? (
-            <box paddingLeft={4} paddingRight={4}>
-              <text fg={theme.text.feedback.error.default} attributes={TextAttributes.BOLD}>
+            <box paddingLeft={DIALOG_LIST_INSET} paddingRight={DIALOG_LIST_INSET}>
+              <text fg={theme.text.feedback.error.base} attributes={TextAttributes.BOLD}>
                 Could not load worktrees
               </text>
-              <text fg={theme.text.subdued}>{errorMessage(loadError())}</text>
-              <text fg={theme.text.subdued}>Close and reopen Worktrees to try again.</text>
+              <text fg={theme.text.muted}>{errorMessage(loadError())}</text>
+              <text fg={theme.text.muted}>Close and reopen Worktrees to try again.</text>
             </box>
           ) : directories.loading || loadedProject.loading ? (
-            <box paddingLeft={4} paddingRight={4}>
-              <text fg={theme.text.subdued}>Loading worktrees…</text>
+            <box paddingLeft={DIALOG_LIST_INSET} paddingRight={DIALOG_LIST_INSET}>
+              <text fg={theme.text.muted}>Loading worktrees…</text>
             </box>
           ) : (
-            <box paddingLeft={4} paddingRight={4}>
-              <text fg={theme.text.subdued}>No worktrees available</text>
+            <box paddingLeft={DIALOG_LIST_INSET} paddingRight={DIALOG_LIST_INSET}>
+              <text fg={theme.text.muted}>No worktrees available</text>
             </box>
           )
         }
         noMatchView={
-          <box paddingLeft={4} paddingRight={4}>
-            <text fg={theme.text.subdued}>No worktrees found</text>
+          <box paddingLeft={DIALOG_LIST_INSET} paddingRight={DIALOG_LIST_INSET}>
+            <text fg={theme.text.muted}>No worktrees found</text>
           </box>
         }
         locked={showError() || directories.loading || loadedProject.loading || Boolean(removing())}

@@ -2,7 +2,6 @@ import { createEffect, createMemo, on, type Accessor } from "solid-js"
 import type { ComposerControls } from "@/composer/adapter"
 import { setCursorPosition } from "@/composer/editor/dom"
 import { createComposerModel } from "@/composer/model"
-import { useAttachmentDestination } from "@/composer/attachments/deliver"
 import { useSettings } from "@/settings/model"
 import { createActiveComposerAdapter } from "./adapter"
 import { createSessionQueue } from "./queue"
@@ -10,14 +9,17 @@ import { createSessionComposerRegionController } from "./session-composer-region
 
 export function createSessionComposerController(input: {
   sessionID: string
+  sessionKey: Accessor<string>
   controls: Accessor<ComposerControls>
   dock: Parameters<typeof createSessionComposerRegionController>[0]
 }) {
   const settings = useSettings()
   const region = createSessionComposerRegionController(input.dock)
   let editor: HTMLDivElement | undefined
+
   const adapter = createActiveComposerAdapter({
     sessionID: input.sessionID,
+    sessionKey: input.sessionKey,
     controls: input.controls,
     submitted: region.onResponseSubmit,
     setEditor: (element) => {
@@ -25,14 +27,15 @@ export function createSessionComposerController(input: {
       region.setPromptRef(element)
     },
   })
+
   const queue = createSessionQueue({
     sessionID: input.sessionID,
     draft: adapter.state,
     working: adapter.working,
     behavior: settings.general.followUpBehavior,
-    destination: useAttachmentDestination(input.controls),
     restoreFocus: (cursor) => {
       const target = editor
+
       if (!target) return
       requestAnimationFrame(() => {
         target.focus()
@@ -40,6 +43,7 @@ export function createSessionComposerController(input: {
       })
     },
   })
+
   const composer = createComposerModel(adapter, { queue })
   const editable = createMemo(() => region.showComposer() && !region.child())
   // Requests hide the view without disposing its draft or queue edit.

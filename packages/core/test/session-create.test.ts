@@ -8,7 +8,7 @@ import { Money } from "@opencode/schema/money"
 import { Shell } from "@opencode/schema/shell"
 import { Skill } from "@opencode/schema/skill"
 import { Agent } from "@opencode/core/agent"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 import { Database } from "@opencode/core/database/database"
 import { AppNodeBuilder } from "@opencode/core/effect/app-node-builder"
 import { LayerNode } from "@opencode/util/effect/layer-node"
@@ -36,6 +36,7 @@ import { Workspace } from "@opencode/core/workspace"
 import { Expected } from "./lib/session-message"
 import { testEffect } from "./lib/effect"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
+import { initGit } from "./fixture/git"
 import { offlineModels } from "./fixture/models"
 import { promptLocationNode } from "./fixture/prompt-location"
 import { globalProjectNode } from "./lib/project"
@@ -158,11 +159,7 @@ describe("Session.create", () => {
           .pipe(Effect.orDie)
         if (!before) return yield* Effect.die(new Error("created session not found"))
 
-        yield* Effect.promise(async () => {
-          await $`git init -q`.cwd(directory)
-          await $`git config user.email test@example.com`.cwd(directory)
-          await $`git config user.name Test`.cwd(directory)
-        })
+        yield* Effect.promise(() => initGit(directory))
         const unborn = yield* projects.resolve(ref.directory)
         const unbornRoot = yield* session.get(created.id)
         const unbornNested = yield* session.get(child.id)
@@ -269,9 +266,7 @@ describe("Session.create", () => {
 
         yield* Effect.promise(async () => {
           for (const root of [nested, outer]) {
-            await $`git init -q`.cwd(root)
-            await $`git config user.email test@example.com`.cwd(root)
-            await $`git config user.name Test`.cwd(root)
+            await initGit(root)
             await $`git commit --allow-empty -qm initial`.cwd(root)
           }
         })
@@ -385,6 +380,26 @@ describe("Session.create", () => {
 
       // Absent stays absent: no empty-object normalization.
       expect((yield* session.create({ location })).metadata).toBeUndefined()
+
+      const replacement = { thread: "updated", owner: "host" }
+      yield* session.setMetadata({ sessionID: created.id, metadata: replacement })
+      expect((yield* session.get(created.id)).metadata).toEqual(replacement)
+      expect(
+        yield* db
+          .select({ data: EventTable.data })
+          .from(EventTable)
+          .where(
+            and(
+              eq(EventTable.aggregate_id, created.id),
+              eq(EventTable.type, Bus.versionedType(SessionEvent.MetadataUpdated.type, 1)),
+            ),
+          )
+          .get()
+          .pipe(Effect.orDie),
+      ).toMatchObject({ data: { metadata: replacement } })
+      expect(
+        yield* session.setMetadata({ sessionID: Session.ID.create(), metadata: replacement }).pipe(Effect.flip),
+      ).toBeInstanceOf(Session.NotFoundError)
     }),
   )
 
