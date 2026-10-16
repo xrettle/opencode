@@ -37,6 +37,8 @@ import { useMarkdown } from "../context/markdown"
 import { getDirectory, getFilename } from "@opencode/util/path"
 import { checksum } from "@opencode/util/encode"
 import { Tooltip } from "@opencode/ui/tooltip"
+import { useDialog } from "@opencode/ui/context/dialog"
+import { Dialog, DialogBody, DialogHeader, DialogTitle } from "@opencode/ui/dialog"
 import { IconButton } from "@opencode/ui/icon-button"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { AnimatedNumber } from "@opencode/ui/animated-number"
@@ -55,8 +57,11 @@ import {
   currentToolInput,
   currentToolMetadata,
   currentToolOutput,
-  executeToolFailed,
+  executeToolCallArgs,
+  executeToolCalls,
+  executeToolSubtitle,
   readImagePath,
+  type ExecuteToolCall,
 } from "../message/current-tool-state"
 import { AssistantReasoningContent, writeClipboard } from "../message/message-content"
 import { followShellOutput } from "./shell-output"
@@ -1125,6 +1130,7 @@ function currentContextToolTrigger(tool: SessionMessageAssistantTool, i18n: Retu
 export interface ToolProps {
   // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- see SAFETY above
   input: Record<string, unknown>
+  error?: string
   // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- see SAFETY above
   metadata: Record<string, unknown>
   tool: string
@@ -1370,7 +1376,7 @@ export function ToolDisplay(
   })
 
   const errorSubtitle = createMemo(() => toolErrorSubtitle(props, i18n))
-  const error = createMemo(() => toolDisplayError(props, i18n.t("ui.toolErrorCard.failed")))
+  const error = createMemo(() => toolDisplayError(props))
   const render = createMemo(() => ToolRegistry.render(props.tool) ?? GenericTool)
 
   return (
@@ -1436,8 +1442,6 @@ function toolErrorSubtitle(props: ToolProps, i18n: UiI18n) {
 
   if (props.tool === "shell") return input.command || metadata.command || undefined
 
-  if (props.tool === "execute") return input.code || undefined
-
   if (props.tool === "read" || props.tool === "edit" || props.tool === "write") return getFilename(input.path ?? "")
 
   if (props.tool === "list" || props.tool === "glob" || props.tool === "grep")
@@ -1468,14 +1472,13 @@ function toolErrorSubtitle(props: ToolProps, i18n: UiI18n) {
   return undefined
 }
 
-function toolDisplayError(props: ToolProps & { error?: string }, fallback: string) {
+function toolDisplayError(props: ToolProps & { error?: string }) {
+  // Code Mode failures render inline in the execution's call list.
+  if (props.tool === "execute") return undefined
+
   if (props.status === "error") return props.error
 
-  if (props.tool !== "execute") return undefined
-
-  if (!executeToolFailed(props.metadata)) return undefined
-
-  return props.output || fallback
+  return undefined
 }
 
 ToolRegistry.register({
@@ -1923,17 +1926,46 @@ ToolRegistry.register({
   name: "execute",
   render(props) {
     const i18n = useI18n()
+    const dialog = useDialog()
     const pending = () => props.status === "streaming" || props.status === "running"
-    const code = createMemo(() => toolInput(props.input).code ?? "")
-    const output = () => stripAnsi(props.output ?? "").replace(/\r\n?/g, "\n")
+    const calls = createMemo(() => executeToolCalls(props.metadata))
+    const subtitle = createMemo(() => executeToolSubtitle(calls()))
+    const code = createMemo(() => (toolInput(props.input).code ?? "").trimEnd())
+
+    // Like the TUI, only a runtime failure shows its output; a failed nested call is marked on its row.
+    const error = createMemo(() => {
+      if (props.status !== "error" && props.metadata.error !== true) return undefined
+      const fallback = i18n.t("ui.toolErrorCard.failed")
+      const text = stripAnsi((props.status === "error" ? props.error : undefined) || props.output || fallback)
+
+      return text.replace(/^Error:\s*/, "").trim() || fallback
+    })
+
+    // A runtime failure belongs to the call that raised it; scripts can also fail outside any call.
+    const owner = createMemo(() => calls().findLastIndex((call) => call.status === "error"))
+
     const sawPending = pending()
+
+    // The script is complete once the call leaves streaming, so the dialog can show it while it runs.
+    const viewable = () => props.status !== "streaming" && !!code()
+
+    const openDetails = () =>
+      dialog.show(() => (
+        <ExecuteDetails
+          code={code()}
+          output={stripAnsi(props.output ?? "").replace(/\r\n?/g, "\n").trim()}
+          error={error()}
+          calls={calls().length}
+          status={props.status}
+        />
+      ))
 
     return (
       <BasicTool
         {...props}
         icon="console"
         rail={false}
-        hasContent
+        hasContent={calls().length > 0 || !!error()}
         compact
         allowOpenWhilePending
         trigger={(open) => (
@@ -1942,21 +1974,229 @@ ToolRegistry.register({
               <span data-slot="basic-tool-tool-title">
                 <TextShimmer text={i18n.t("ui.tool.execute")} active={pending()} />
               </span>
-              <Show when={!open() && code()}>
-                <ShellSubmessage text={code().split("\n", 1)[0]} animate={sawPending} />
-              </Show>
+              <Show when={!open() && subtitle()}>{(text) => <ShellSubmessage text={text()} animate={sawPending} />}</Show>
             </div>
           </div>
         )}
+        action={
+          viewable() ? (
+            <Tooltip value={i18n.t("ui.tool.execute.viewCode")} placement="top">
+              <IconButton
+                icon={<Icon name="code-slash" size="small" />}
+                size="normal"
+                variant="ghost"
+                aria-label={i18n.t("ui.tool.execute.viewCode")}
+                aria-haspopup="dialog"
+                onClick={openDetails}
+              />
+            </Tooltip>
+          ) : undefined
+        }
       >
-        <ConsoleOutput copy={code()} variant="shell">
-          <span data-slot="bash-command">{code()}</span>
-          <Show when={output()}>{(value) => <span data-slot="bash-result">{value()}</span>}</Show>
-        </ConsoleOutput>
+        <div data-component="execute-tool-calls">
+          <Index each={calls()}>
+            {(call, index) => <ExecuteCallRow call={call()} error={index === owner() ? error() : undefined} />}
+          </Index>
+          <Show when={owner() === -1 && error()}>{(text) => <ExecuteCallRow error={text()} />}</Show>
+        </div>
       </BasicTool>
     )
   },
 })
+
+const decodeJson = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Unknown))
+
+function ExecuteDetails(props: { code: string; output: string; error?: string; calls: number; status?: string }) {
+  const i18n = useI18n()
+  const fileComponent = useFileComponent()
+  const lines = (text: string) => i18n.plural("ui.tool.execute.lines", text.split("\n").length)
+
+  return (
+    <Dialog fit containerClass="!w-[min(calc(100vw_-_32px),720px)] max-h-[calc(100vh_-_92px)]">
+      <DialogHeader>
+        <div data-slot="execute-details-title">
+          <DialogTitle>{i18n.t("ui.tool.execute")}</DialogTitle>
+          <span data-slot="execute-details-status" data-status={props.error ? "error" : props.status}>
+            {props.error
+              ? i18n.t("ui.toolErrorCard.failed")
+              : props.status === "running"
+                ? i18n.t("ui.tool.execute.running")
+                : i18n.t("ui.tool.execute.completed")}
+          </span>
+          <span data-slot="execute-details-meta">{i18n.plural("ui.tool.execute.calls", props.calls)}</span>
+        </div>
+      </DialogHeader>
+      <DialogBody class="min-h-0 flex-none overflow-y-auto">
+        <div data-component="execute-details">
+          <ExecuteDetailsSection
+            label={i18n.t("ui.tool.execute.code")}
+            meta={lines(props.code)}
+            copy={props.code}
+            copyLabel={i18n.t("ui.tool.execute.copyCode")}
+          >
+            <Dynamic
+              component={fileComponent}
+              mode="text"
+              file={{ name: "execute.js", contents: props.code, cacheKey: checksum(props.code) }}
+              overflow="scroll"
+            />
+          </ExecuteDetailsSection>
+          <Show
+            when={props.error}
+            fallback={
+              <Show when={props.output}>
+                {(output) => (
+                  <ExecuteDetailsSection
+                    label={i18n.t("ui.tool.execute.output")}
+                    meta={lines(output())}
+                    copy={output()}
+                    copyLabel={i18n.t("ui.tool.execute.copyOutput")}
+                  >
+                    <Dynamic
+                      component={fileComponent}
+                      mode="text"
+                      file={{
+                        // Code Mode returns structured results as JSON; highlight those, leave anything else plain.
+                        name: Option.isSome(decodeJson(output())) ? "output.json" : "output.txt",
+                        contents: output(),
+                        cacheKey: checksum(output()),
+                      }}
+                      overflow="scroll"
+                    />
+                  </ExecuteDetailsSection>
+                )}
+              </Show>
+            }
+          >
+            {(error) => (
+              <ExecuteDetailsSection
+                label={i18n.t("ui.tool.execute.error")}
+                copy={error()}
+                copyLabel={i18n.t("ui.toolErrorCard.copyError")}
+              >
+                <pre data-slot="execute-details-error">{error()}</pre>
+              </ExecuteDetailsSection>
+            )}
+          </Show>
+        </div>
+      </DialogBody>
+    </Dialog>
+  )
+}
+
+function ExecuteDetailsSection(props: {
+  label: string
+  meta?: string
+  copy: string
+  copyLabel: string
+  children: JSX.Element
+}) {
+  const i18n = useI18n()
+  const [copied, setCopied] = createSignal(false)
+
+  const copy = async () => {
+    if (!(await writeClipboard(props.copy))) return
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <section data-slot="execute-details-section">
+      <header data-slot="execute-details-section-header">
+        <span data-slot="execute-details-section-label">{props.label}</span>
+        <Show when={props.meta}>{(meta) => <span data-slot="execute-details-section-meta">{meta()}</span>}</Show>
+        <Tooltip value={copied() ? i18n.t("ui.message.copied") : props.copyLabel} placement="top">
+          <IconButton
+            icon={<Icon name={copied() ? "check" : "outline-copy"} size="small" />}
+            size="normal"
+            variant="ghost-muted"
+            aria-label={copied() ? i18n.t("ui.message.copied") : props.copyLabel}
+            onClick={copy}
+          />
+        </Tooltip>
+      </header>
+      <div data-slot="execute-details-source">{props.children}</div>
+    </section>
+  )
+}
+
+function ExecuteCallRow(props: { call?: ExecuteToolCall; error?: string }) {
+  const [open, setOpen] = createSignal(false)
+  const args = createMemo(() => (props.call ? executeToolCallArgs(props.call) : []))
+  const input = createMemo(() => Object.entries(props.call?.input ?? {}))
+  const failed = () => !props.call || props.call.status === "error"
+  const expandable = () => input().length > 0 || !!props.error
+  const summary = () => (props.call ? args().join(", ") : props.error?.split("\n", 1)[0])
+
+  const toggle = () => {
+    if (!expandable() || window.getSelection()?.toString()) return
+    setOpen((value) => !value)
+  }
+
+  return (
+    <div data-slot="execute-tool-call-item">
+      <div
+        data-slot="execute-tool-call"
+        data-status={failed() ? "error" : props.call?.status}
+        data-expanded={open() ? "true" : undefined}
+        dir="ltr"
+        role={expandable() ? "button" : undefined}
+        tabIndex={expandable() ? 0 : undefined}
+        aria-expanded={expandable() ? open() : undefined}
+        onClick={toggle}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return
+          event.preventDefault()
+          toggle()
+        }}
+      >
+        <Show when={failed()} fallback={<span data-slot="execute-tool-call-marker">›</span>}>
+          <span data-slot="execute-tool-call-marker">
+            <Icon name="outline-hexagonal-warning" size="small" />
+          </span>
+        </Show>
+        <Show when={props.call}>
+          {(call) => (
+            <span data-slot="execute-tool-call-name">
+              <TextShimmer text={call().tool} active={call().status === "running"} />
+            </span>
+          )}
+        </Show>
+        <Show when={!open() && summary()}>
+          {(text) => (
+            <span data-slot="execute-tool-call-args" title={text()}>
+              {props.call ? `[${text()}]` : text()}
+            </span>
+          )}
+        </Show>
+        <Show when={props.error}>
+          <span data-slot="execute-tool-call-arrow">›</span>
+        </Show>
+      </div>
+      <Show when={open()}>
+        <Show when={input().length > 0}>
+          <dl data-slot="execute-tool-call-input" dir="ltr">
+            <For each={input()}>
+              {([key, value]) => (
+                <div data-slot="execute-tool-call-input-entry">
+                  <dt>{key}:</dt>
+                  <dd>{typeof value === "string" ? value : JSON.stringify(value, null, 2)}</dd>
+                </div>
+              )}
+            </For>
+          </dl>
+        </Show>
+        <Show when={props.error}>
+          {(error) => (
+            <div data-slot="execute-tool-error" dir="ltr">
+              {error()}
+            </div>
+          )}
+        </Show>
+      </Show>
+    </div>
+  )
+}
 
 ToolRegistry.register({
   name: "shell",

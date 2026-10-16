@@ -252,7 +252,7 @@ export function createSessionTimelineRowRenderer(input: {
             }
             reasoningOpen={(id) => input.disclosure.value(id)}
             onReasoningOpenChange={(id, open) => input.disclosure.set(id, open)}
-            toolDefaultOpen={(tool) => (input.timelineDetail ? contentDefaultOpen(tool) : false)}
+            toolDefaultOpen={(tool) => (input.timelineDetail || tool.name === "execute" ? contentDefaultOpen(tool) : false)}
             toolOpen={(id) => input.disclosure.value(`${row().group.key}:tool:${id}`)}
             onToolOpenChange={(id, open) => input.disclosure.set(`${row().group.key}:tool:${id}`, open)}
             fileOpen={(path) =>
@@ -391,6 +391,8 @@ export function createSessionTimelineRowRenderer(input: {
   }
 
   function contentDefaultOpen(item: SessionMessageAssistant["content"][number]) {
+    if (item.type === "tool" && item.name === "execute") return true
+
     if (input.timelineDetail) {
       const category = timelineCategory(item)
 
