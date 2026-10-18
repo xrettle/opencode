@@ -293,7 +293,7 @@ export const defaultSettings: Settings = {
   keybinds: {},
   permissions: { autoApprove: false, autoApproveProjects: {} },
   workspaces: { defaultDestination: "last-used", lastUsed: {} },
-  notifications: { agent: true, permissions: true, errors: false },
+  notifications: { agent: false, permissions: true, errors: false },
   sounds: {
     agentEnabled: true,
     agent: "staplebops-01",
