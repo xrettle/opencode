@@ -22,6 +22,7 @@ export function Composer(props: {
   const dialog = useDialog()
   const command = useCommand()
   const language = useLanguage()
+
   const modelName = () => {
     const selection = props.model.model.selection
     const model = selection.current()
@@ -130,7 +131,6 @@ function ComposerModelControl(props: {
         >
           <ModelSelectorPopover
             model={props.model}
-            unpaid={!props.paid}
             trigger={(triggerProps) => (
               <Button
                 {...triggerProps}
