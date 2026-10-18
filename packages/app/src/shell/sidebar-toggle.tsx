@@ -71,11 +71,10 @@ function useCollapsedSlot() {
   }
 }
 
-const slotClass =
-  "flex shrink-0 justify-end overflow-hidden transition-[width] duration-[240ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
+const slotClass = "flex shrink-0 justify-end overflow-hidden"
 
-// Floats over the top of every screen, centered on the session header's 48px row. Slides in from the content's start
-// edge as the sidebar closes.
+// Floats over the top of every screen, centered on the session header's 48px row. Appears at the content's start edge
+// when the sidebar closes.
 export function CollapsedSidebarToggle() {
   const slot = useCollapsedSlot()
 
@@ -94,7 +93,7 @@ export function CollapsedSidebarToggle() {
   )
 }
 
-// Reserves the floating toggle's room in a header, pushing its contents along as the toggle slides in. `start` is where
+// Reserves the floating toggle's room in a header, pushing its contents along while the toggle is shown. `start` is where
 // the space begins, in pixels from the content area's start edge, so every header's contents line up after the toggle.
 export function CollapsedSidebarToggleSpace(props: { start?: number; class?: string }) {
   const slot = useCollapsedSlot()

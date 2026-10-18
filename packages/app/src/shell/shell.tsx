@@ -1,4 +1,4 @@
-import { createEffect, on, Show, Suspense, type ParentProps } from "solid-js"
+import { Show, Suspense, type ParentProps } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
@@ -26,25 +26,12 @@ export default function Layout(props: ParentProps) {
   const [state, setState] = createStore<{
     tabsWidth: number
     tabsMount: HTMLElement | undefined
-    tabsAnimating: boolean
   }>({
     tabsWidth: 260,
     tabsMount: undefined,
-    tabsAnimating: false,
   })
 
   const verticalTabs = () => preferences.appearance.tabLayout() === "vertical" && !mobile()
-
-  // Animate only open/close; resize drags must track the pointer.
-  createEffect(
-    on(
-      preferences.appearance.sidebarOpen,
-      () => {
-        if (verticalTabs()) setState("tabsAnimating", true)
-      },
-      { defer: true },
-    ),
-  )
 
   command.register("sidebar", () =>
     verticalTabs()
@@ -87,19 +74,9 @@ export default function Layout(props: ParentProps) {
               id="vertical-tabs-sidebar"
               data-slot="vertical-tabs-sidebar"
               data-state={preferences.appearance.sidebarOpen() ? "open" : "closed"}
-              classList={{
-                "relative h-full min-h-0 shrink-0": true,
-                "transition-[width] duration-[240ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none":
-                  state.tabsAnimating,
-              }}
+              class="relative h-full min-h-0 shrink-0"
               style={{ width: preferences.appearance.sidebarOpen() ? `${state.tabsWidth}px` : "0px" }}
               inert={!preferences.appearance.sidebarOpen()}
-              onTransitionEnd={(event) => {
-                if (event.target === event.currentTarget) setState("tabsAnimating", false)
-              }}
-              onTransitionCancel={(event) => {
-                if (event.target === event.currentTarget) setState("tabsAnimating", false)
-              }}
             >
               <div class="absolute inset-0 overflow-hidden">
                 <div
