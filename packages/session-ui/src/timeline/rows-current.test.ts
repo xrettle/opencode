@@ -1104,6 +1104,47 @@ describe("current session timeline rows", () => {
     ])
   })
 
+  test.each([
+    {
+      name: "default",
+      grouped: false,
+      groups: [["context", "read", "grep"], ["part", "agent_1"], ["part", "agent_2"], ["context", "glob", "read_2"]],
+    },
+    { name: "opted in", grouped: true, groups: [["context", "read", "grep", "agent_1", "agent_2", "glob", "read_2"]] },
+  ])("gives each subagent its own row unless subagent grouping is enabled ($name)", (input) => {
+    const compact = timelinePresets.find((preset) => preset.id === "compact")!.value
+    const rows = Timeline.constructSessionMessageRows(
+      storyDocument([
+        storyTool("read", "read", "completed", { path: "src/a.ts" }),
+        storyTool("grep", "grep", "completed", { pattern: "agent" }),
+        storyTool("agent_1", "subagent", "completed", { agent: "explore", description: "Map the code" }),
+        storyTool("agent_2", "subagent", "completed", { agent: "general", description: "Check the tests" }),
+        storyTool("glob", "glob", "completed", { pattern: "*.ts" }),
+        storyTool("read_2", "read", "completed", { path: "src/b.ts" }),
+      ]).messages,
+      true,
+      { type: "idle" },
+      undefined,
+      false,
+      false,
+      undefined,
+      input.grouped ? { ...compact, subagents: { placement: "grouped" } } : compact,
+    ).rows
+
+    expect(
+      rows.flatMap((row) =>
+        !Predicate.isTagged(row, "AssistantPart")
+          ? []
+          : [
+              [
+                row.group.type,
+                ...(row.group.type === "part" ? [row.group.ref] : row.group.refs).map((ref) => ref.partID),
+              ],
+            ],
+      ),
+    ).toEqual(input.groups.map((group) => [...group]))
+  })
+
   test("merges adjacent separate reads into one read row split by other parts", () => {
     const rows = Timeline.constructSessionMessageRows(
       storyDocument([
