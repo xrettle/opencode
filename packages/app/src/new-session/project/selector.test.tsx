@@ -26,7 +26,7 @@ describe("new session project selection", () => {
     }
 
     createRoot((dispose) => {
-      const controller = createPromptProjectController({ controls: () => controls, onDone() {} })
+      const controller = createPromptProjectController({ controls: () => controls })
       expect(controller.selected()).toEqual(current)
       dispose()
     })
@@ -46,7 +46,7 @@ describe("new session project selection", () => {
     }
 
     createRoot((dispose) => {
-      const controller = createPromptProjectController({ controls: () => controls, onDone() {} })
+      const controller = createPromptProjectController({ controls: () => controls })
       expect(controller.selected()).toEqual(local)
       dispose()
     })

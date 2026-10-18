@@ -1,0 +1,39 @@
+.new-session-location-drill {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--v2-icon-icon-faint);
+}
+
+.command-palette-row[data-active] .new-session-location-drill {
+  color: var(--v2-icon-icon-base);
+}
+
+.new-session-location-drill:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+}
+
+.new-session-location-hints {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  border-top: 0.5px solid var(--v2-border-border-muted);
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+  font-weight: 440;
+  line-height: 16px;
+  letter-spacing: -0.04px;
+  user-select: none;
+}
+
+.new-session-location-hints > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

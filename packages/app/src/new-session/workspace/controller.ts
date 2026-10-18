@@ -14,6 +14,7 @@ import {
   isWorkspaceSelection,
   workspaceDefaultSelection,
   workspaceSelectionDestination,
+  workspaceSelectionDirectories,
 } from "@/workspaces/paths"
 
 export function resolveNewSessionWorktree(input: { enabled: boolean; selected?: string; fallback?: string }) {
@@ -53,7 +54,6 @@ export function createNewSessionWorkspaceController(input: {
   selectedBranch: () => string | undefined
   setSelectedWorktree: (worktree: string | undefined) => void
   setSelectedBranch: (branch: string | undefined) => void
-  onViewAll: () => void
 }) {
   const sdk = useWorkspaceLocation()
   const serverSDK = useServerSDK()
@@ -119,15 +119,7 @@ export function createNewSessionWorkspaceController(input: {
 
     if (!project) return []
 
-    const directories = [
-      ...worktreeItems().map((item) => item.directory),
-      ...project.worktrees.map((item) => item.directory),
-      ...(project.sandboxes ?? []),
-    ]
-
-    return directories
-      .filter((directory) => !sameDirectory(project.worktree, directory))
-      .filter((directory, index, items) => items.findIndex((item) => sameDirectory(item, directory)) === index)
+    return workspaceSelectionDirectories(project, worktreeItems())
   })
 
   const managedWorktrees = createMemo(() => {
@@ -186,8 +178,8 @@ export function createNewSessionWorkspaceController(input: {
   const [branches] = createResource(
     () => (visible() ? { directory: projectRoot(), search: state.search } : undefined),
     ({ directory, search }) =>
-      serverSDK.api.vcs
-        .branch.list({ location: { directory }, search, limit: 50 })
+      serverSDK.api.vcs.branch
+        .list({ location: { directory }, search, limit: 50 })
         .then((response) => ({ directory, search, data: response.data }))
         .catch(() => ({ directory, search, data: [] })),
   )
@@ -295,7 +287,6 @@ export function createNewSessionWorkspaceController(input: {
         ].slice(0, 50)
       },
       searchBranches,
-      openAll: input.onViewAll,
     },
     bar: {
       visible,

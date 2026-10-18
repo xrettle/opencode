@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 import type { OpenCodeEvent, WorktreeDirectory } from "@opencode/client/promise"
 import { draftHref, expectPath, provider, sessionHref } from "../utils/app"
 import type { MockAnswer } from "../utils/mock-server"
-import { openDraft, openSession, openWorktreeDraft, type WorkspaceInput } from "../utils/workspace"
+import { newSessionLocation, openDraft, openSession, openWorktreeDraft, type WorkspaceInput } from "../utils/workspace"
 
 const directory = "C:/OpenCode/WorkspacePending"
 
@@ -281,7 +281,7 @@ for (const row of [
 
     if (row.followUp) return
     await expect(page.getByText("Failed to create worktree", { exact: true })).toBeVisible()
-    await expect(page.getByRole("button", { name: "New worktree", exact: true })).toBeVisible()
+    await expect(newSessionLocation(page)).toContainText("New worktree")
     await expect(pending.message).toHaveCount(0)
     await expect(tabLink(page, pending.sessionID)).toHaveCount(0)
     expect(mock.creates).toEqual([])
@@ -298,7 +298,7 @@ test("retains the draft and reuses the created workspace after session creation 
   await expect(page.getByText("Failed to create session", { exact: true })).toBeVisible()
   await expect(editor(page)).toHaveText(text)
   await expect(submit(page)).toBeEnabled()
-  await expect(page.getByRole("button", { name: "pending-workspace", exact: true })).toBeVisible()
+  await expect(newSessionLocation(page)).toContainText("pending-workspace")
   await expect(pending.shimmer).toHaveCount(0)
   await expect(pending.message).toHaveCount(0)
   expect(mock.creates).toEqual([expect.objectContaining({ id: pending.sessionID, location: { directory: workspace } })])
@@ -346,7 +346,7 @@ test("restores the draft after closing and revisiting a pending session that fai
   await expect(page.getByText("Failed to create worktree", { exact: true })).toBeVisible()
   await expect(editor(page)).toHaveText(`${text}\n\n${followUp}`)
   await expect(submit(page)).toBeEnabled()
-  await expect(page.getByRole("button", { name: "New worktree", exact: true })).toBeVisible()
+  await expect(newSessionLocation(page)).toContainText("New worktree")
   await expect(page.locator(`[data-titlebar-tab-link][href="${draftHref(draftID)}"]`)).toHaveCount(1)
   await expect(tab).toHaveCount(0)
   await expect(pending.message).toHaveCount(0)

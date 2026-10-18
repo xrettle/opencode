@@ -2,17 +2,24 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { Icon } from "@opencode/ui/icon"
 import { Show, createMemo, createSignal } from "solid-js"
+import {
+  displayName,
+  getProjectAvatarSource,
+  getProjectAvatarVariant,
+  ProjectAvatar,
+} from "@opencode/ui/project-avatar"
 import { Schema } from "effect"
 import createPresence from "solid-presence"
 import { Composer } from "@/composer/composer"
 import { ComposerDropzone } from "@/composer/dropzone"
 import type { ComposerModel } from "@/composer/model"
-import { PromptGitStatus, PromptWorkspaceSelector } from "@/new-session/workspace/selector"
+import { PromptBranchSelector } from "@/new-session/workspace/selector"
 import {
   PromptProjectAddButton,
-  PromptProjectSelector,
+  type PromptProject,
   type PromptProjectController,
 } from "@/new-session/project/selector"
+import type { useNewSessionLocationDialog } from "@/new-session/location/dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useProviders } from "@/providers/catalog/providers"
@@ -38,6 +45,7 @@ export function NewSessionView(props: {
   composer: ComposerModel
   project: PromptProjectController
   workspace: NewSessionWorkspaceController
+  location: ReturnType<typeof useNewSessionLocationDialog>
 }) {
   const [onboarding, setOnboarding, , onboardingReady] = persisted(
     Persist.global("workspace-onboarding"),
@@ -64,39 +72,46 @@ export function NewSessionView(props: {
         <div class="absolute inset-x-0 top-[25.375%] flex justify-center px-6">
           <div class={NEW_SESSION_CONTENT_WIDTH}>
             <NewSessionWordmark />
-            <div class="mt-8 flex flex-col gap-8">
+            <div class="mt-8 flex flex-col gap-3">
               <Composer model={props.composer} />
               <Show when={props.project.empty()}>
                 <PromptProjectAddButton controller={props.project} />
               </Show>
               <Show when={props.project.selected()}>
-                <div class="flex min-h-7 min-w-0 flex-row flex-wrap items-center justify-center gap-0 text-v2-text-text-faint">
-                  <PromptProjectSelector controller={props.project} placement="bottom" />
-                  <Show
-                    when={props.workspace.bar.visible()}
-                    fallback={
-                      <PromptGitStatus
-                        branch={props.workspace.bar.branch()}
-                        noGit={!props.workspace.project.git()}
-                        class="ms-1"
-                      />
-                    }
-                  >
-                    <PromptWorkspaceSelector
-                      value={props.workspace.selection.value()}
-                      projectRoot={props.workspace.project.root()}
-                      workspaces={props.workspace.project.workspaces()}
-                      branches={props.workspace.project.branches()}
-                      branch={props.workspace.bar.branch()}
-                      onboarding={onboardingReady() && !onboarding.used}
-                      onChange={select}
-                      onCreate={props.workspace.selection.create}
-                      onSearch={props.workspace.project.searchBranches}
-                      onDone={props.composer.restoreFocus}
-                      onViewAll={props.workspace.project.openAll}
+                {(project) => (
+                  <div class="flex min-h-7 min-w-0 flex-row flex-wrap items-center gap-0 ps-2.5 text-v2-text-text-faint">
+                    <NewSessionLocationTrigger
+                      project={project()}
+                      workspace={props.workspace.bar.visible() ? props.workspace.selection.value() : "main"}
+                      root={props.workspace.project.root()}
+                      onboarding={onboardingReady() && !onboarding.used && props.workspace.bar.visible()}
+                      onClick={() =>
+                        props.location({
+                          onWorkspace: (value) => {
+                            if (value !== "main") setOnboarding("used", true)
+                          },
+                        })
+                      }
                     />
-                  </Show>
-                </div>
+                    <Show
+                      when={
+                        props.workspace.bar.visible() &&
+                        props.workspace.selection.value() === "create" &&
+                        props.workspace.bar.branch()
+                      }
+                    >
+                      {(branch) => (
+                        <PromptBranchSelector
+                          branch={branch()}
+                          branches={props.workspace.project.branches()}
+                          onCreate={props.workspace.selection.create}
+                          onSearch={props.workspace.project.searchBranches}
+                          onDone={props.composer.restoreFocus}
+                        />
+                      )}
+                    </Show>
+                  </div>
+                )}
               </Show>
             </div>
           </div>
@@ -241,5 +256,73 @@ function NewSessionTips(props: {
         </div>
       </div>
     </Show>
+  )
+}
+
+function NewSessionLocationTrigger(props: {
+  project: PromptProject
+  /** "main", "create", or a worktree directory. */
+  workspace: string
+  root: string
+  onboarding: boolean
+  onClick: () => void
+}) {
+  const language = useLanguage()
+
+  const path = () => {
+    if (props.workspace === "main") return props.root
+    if (props.workspace === "create") return language.t("workspace.new")
+
+    return props.workspace
+  }
+
+  return (
+    <Tooltip
+      appearance={props.onboarding ? "large" : undefined}
+      placement="top"
+      openDelay={800}
+      value={
+        props.onboarding ? (
+          <div class="flex flex-col gap-1 text-start">
+            <div class="flex items-center gap-1.5 font-[530] text-v2-text-text-base">
+              <Icon name="outline-worktree" size="small" class="shrink-0 text-v2-text-text-accent" />
+              <span>{language.t("workspace.onboarding.title")}</span>
+            </div>
+            <span class="font-[440] text-v2-text-text-muted">{language.t("workspace.onboarding.description")}</span>
+          </div>
+        ) : (
+          language.t("session.new.workspace.trigger.tooltip")
+        )
+      }
+      contentClass={props.onboarding ? "max-w-[280px]" : undefined}
+      class="min-w-0"
+    >
+      <button
+        type="button"
+        data-action="prompt-project"
+        aria-haspopup="dialog"
+        aria-description={language.t("session.new.workspace.trigger.tooltip")}
+        class="flex h-7 min-w-0 max-w-full items-center gap-2 rounded-sm px-1.5 text-[13px] font-[440] leading-5 tracking-[-0.04px] transition-colors hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none"
+        onClick={props.onClick}
+      >
+        <ProjectAvatar
+          class="shrink-0"
+          fallback={displayName(props.project)}
+          src={getProjectAvatarSource(props.project.id, props.project.icon)}
+          variant={getProjectAvatarVariant(props.project.icon?.color)}
+        />
+        <span class="max-w-[200px] shrink-0 truncate text-v2-text-text-muted">{displayName(props.project)}</span>
+        <span dir="ltr" class="min-w-0 truncate text-v2-text-text-faint">
+          {path()}
+        </span>
+        <Show when={props.onboarding}>
+          <span
+            data-slot="workspace-onboarding-dot"
+            aria-hidden="true"
+            class="size-1.5 shrink-0 rounded-full bg-v2-text-text-accent"
+          />
+        </Show>
+      </button>
+    </Tooltip>
   )
 }

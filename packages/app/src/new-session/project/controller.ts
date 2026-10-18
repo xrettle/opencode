@@ -31,7 +31,7 @@ export function createComposerProjectControls(props: { draftId: string; worktree
     })
   })
 
-  const selectProject = (worktree: string, serverKey?: string) => {
+  const selectProject = (directory: string, serverKey?: string, workspace?: string) => {
     const connection = serverKey
       ? servers.list.find((connection) => ServerConnection.key(connection) === serverKey)
       : projectServer()
@@ -39,12 +39,12 @@ export function createComposerProjectControls(props: { draftId: string; worktree
     if (!connection) return
 
     const target = global.ensureServerCtx(connection)
-    target.projects.open(worktree)
-    target.projects.touch(worktree)
+    target.projects.open(directory)
+    target.projects.touch(directory)
     tabs.updateDraft(props.draftId, {
       server: ServerConnection.key(connection),
-      directory: worktree,
-      worktree: workspaceSelectionDestination(props.worktree(), location().directory),
+      directory,
+      worktree: workspace ?? workspaceSelectionDestination(props.worktree(), location().directory),
       branch: undefined,
     })
   }
