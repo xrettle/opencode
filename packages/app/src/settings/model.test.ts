@@ -96,7 +96,6 @@ describe("settings schema", () => {
         showTurnDiffs: false,
         generatedUI: true,
         mobileTitlebarPosition: "top",
-        terminalPlacement: "side",
         followUpBehavior: "steer",
       },
       appearance: {
