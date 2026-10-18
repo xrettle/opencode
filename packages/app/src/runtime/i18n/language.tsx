@@ -277,6 +277,16 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
     const plural = (key: PluralKey, count: number, params?: Record<string, string | number | boolean>) =>
       pluralForm(key, pluralCategory(intl(), count), { ...params, count })
 
+    // "2 subagents · 1 shell", or one group alone, as the iOS app's background-work capsule reads.
+    const activitySummary = (counts: { subagents: number; shells: number }) => {
+      const subagents = counts.subagents ? plural("session.activity.subagents", counts.subagents) : undefined
+      const shells = counts.shells ? plural("session.activity.shells", counts.shells) : undefined
+
+      if (subagents && shells) return t("session.activity.summary", { subagents, shells })
+
+      return subagents ?? shells ?? ""
+    }
+
     const tDynamic = <Key extends Extract<keyof Dictionary, string>>(
       key: TranslationKey<Key>,
       source: string,
@@ -326,6 +336,7 @@ export const { use: useLanguage, provider: LanguageProvider } = createSimpleCont
       tDynamic,
       plural,
       pluralForm,
+      activitySummary,
       rich,
       list,
       setLocale(next: Locale) {

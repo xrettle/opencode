@@ -545,6 +545,13 @@ export const dict = {
 
   "session.messages.loading": "Loading messages…",
   "session.messages.jumpToLatest": "Jump to latest",
+  "session.activity.subagents.one": "{{count}} subagent",
+  "session.activity.subagents.other": "{{count}} subagents",
+  "session.activity.shells.one": "{{count}} shell",
+  "session.activity.shells.other": "{{count}} shells",
+  "session.activity.summary": "{{subagents}} · {{shells}}",
+  "session.activity.section.subagents": "Subagents",
+  "session.activity.section.shells": "Shells",
 
   "session.question.progress": "{{current}} of {{total}} questions",
   "session.question.title": "Question",

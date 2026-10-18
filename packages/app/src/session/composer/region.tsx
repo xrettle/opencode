@@ -29,6 +29,8 @@ import { createSessionRevert } from "../revert"
 import { SessionComposerRegion } from "./session-composer-region"
 import { createSessionComposerController, type SessionComposerController } from "./controller"
 import { SessionQueuePanel } from "./queue-panel"
+import { SessionActivityChips, type SessionActivityItem } from "./activity-chips"
+import { useOpenSessionRoute } from "../session-identity-header"
 import { resolveSessionComposerSelection } from "./selection"
 import { createSessionRequestModel } from "../requests/model"
 import type { Region } from "@/runtime/extension/panels"
@@ -295,6 +297,8 @@ export function ActiveSessionComposerRegion(props: {
   suggestionBoundary: () => HTMLElement | undefined
 }) {
   const location = useWorkspaceLocation()
+  const data = useData()
+  const openRoute = useOpenSessionRoute()
 
   // Only the server's LocationNotFoundError for the session's own Location replaces the composer.
   const missing = createMemo(() => {
@@ -306,6 +310,51 @@ export function ActiveSessionComposerRegion(props: {
     return { directory: info.location.directory, sessionID: info.id, projectID: info.projectID }
   })
 
+  // Subagents count while their call still blocks the run; foreground shells stay out, the timeline shows them.
+  const subagents = createMemo<SessionActivityItem[]>(() => [
+    ...props.model.region.state.background.blocking().flatMap((task) =>
+      task.type === "subagent"
+        ? [
+            {
+              ...task,
+              key: task.id ?? task.partID,
+              agent: task.id ? data.session.get(task.id)?.agent : undefined,
+              sessionID: task.id,
+              target: task.partID,
+            },
+          ]
+        : [],
+    ),
+    ...props.model.region.state.background.tasks().flatMap((task) =>
+      task.type === "subagent"
+        ? [
+            {
+              ...task,
+              key: task.id,
+              agent: task.agent ?? data.session.get(task.id)?.agent,
+              sessionID: task.id,
+              target: task.id,
+            },
+          ]
+        : [],
+    ),
+  ])
+
+  const shells = createMemo<SessionActivityItem[]>(() =>
+    props.model.region.state.background
+      .tasks()
+      .flatMap((task) => (task.type === "shell" ? [{ ...task, key: task.id, target: task.id }] : [])),
+  )
+
+  const open = (item: SessionActivityItem) => {
+    const current = props.session.identity.params.id
+
+    if (!current) return
+
+    // Shells and starting subagent calls live in this timeline, which reveals them once opened.
+    openRoute(current, item.sessionID ?? current, item.sessionID ? undefined : item.target)
+  }
+
   return (
     <SessionComposerRegion
       controller={props.model.region}
@@ -315,6 +364,7 @@ export function ActiveSessionComposerRegion(props: {
           keyed
           fallback={
             <div class="relative">
+              <SessionActivityChips subagents={subagents()} shells={shells()} onOpen={open} />
               <SessionQueuePanel queue={props.model.queue} />
               <div class="relative z-10">
                 <Composer

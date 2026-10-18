@@ -6,9 +6,11 @@ import {
   SessionComposerRegion,
   type SessionComposerRegionViewController,
 } from "@/session/composer/session-composer-region"
+import { SessionActivityChips, type SessionActivityItem } from "@/session/composer/activity-chips"
 import { SessionPanelFrame, SessionRouteFrame } from "@/session/session-frame"
 import type { FormInfo, PermissionRequest, SessionStatus } from "@opencode/client/promise"
 import type { SessionDocument } from "@opencode/session-ui/document"
+import type { TimelineDetail } from "@opencode/session-ui/timeline/detail"
 import { CurrentSessionProviders, STORY_MODEL } from "@opencode/session-ui/storybook"
 import { SessionTimeline } from "@opencode/session-ui/timeline"
 import { createComposerEditor } from "@/composer/editor/interaction"
@@ -85,6 +87,12 @@ export type SessionPreviewProps = {
   reviewOpened?: boolean
   child?: { parentID: string }
   terminal?: { title: string; lines: string[] }
+  activity?: {
+    subagents: SessionActivityItem[]
+    shells: SessionActivityItem[]
+    onOpen?: (item: SessionActivityItem) => void
+  }
+  timelineDetail?: TimelineDetail
 }
 
 export function SessionPreview(props: SessionPreviewProps) {
@@ -187,7 +195,12 @@ function SessionSurfaceState(props: SessionPreviewProps & { onReset: () => void 
 
   const prompt = createPromptController({
     initial: props.draft ?? "",
-    placeholder: language.t("prompt.placeholder.normal"),
+    placeholder: language.t(
+      props.document.status.type === "idle"
+        ? "ui.promptInput.placeholder.normal"
+        : "ui.promptInput.placeholder.followUp",
+      { slash: "/", at: "@" },
+    ),
     status: () => props.document.status,
     onActivity: (activity) => setState("activity", activity),
     onSubmit: (text) => setState("activity", `Submitted locally: ${text}`),
@@ -256,14 +269,15 @@ function SessionSurfaceState(props: SessionPreviewProps & { onReset: () => void 
               <div class="flex min-h-0 flex-1">
                 <section
                   classList={{
-                    "min-w-0 flex-1 flex-col bg-background-base": true,
+                    "min-w-0 flex-1 flex-col bg-v2-background-bg-base": true,
                     flex: !state.reviewOpened,
                     "hidden md:flex": state.reviewOpened,
                   }}
                 >
-                  <div class="min-h-0 flex-1 overflow-y-auto py-6">
+                  <div data-slot="story-timeline" class="min-h-0 flex-1 overflow-y-auto py-6">
                     <SessionTimeline
                       document={props.document}
+                      timelineDetail={props.timelineDetail}
                       editToolDefaultOpen
                       shellToolDefaultOpen
                       class="mx-auto w-full max-w-[840px]"
@@ -271,7 +285,22 @@ function SessionSurfaceState(props: SessionPreviewProps & { onReset: () => void 
                   </div>
                   <SessionComposerRegion
                     controller={region}
-                    composer={<Composer model={prompt.controller} borderUnderlay />}
+                    composer={
+                      <div class="relative">
+                        <SessionActivityChips
+                          subagents={props.activity?.subagents ?? []}
+                          shells={props.activity?.shells ?? []}
+                          onOpen={(item) =>
+                            props.activity?.onOpen
+                              ? props.activity.onOpen(item)
+                              : setState("activity", `Opened ${item.label ?? item.key}`)
+                          }
+                        />
+                        <div class="relative z-10">
+                          <Composer model={prompt.controller} borderUnderlay />
+                        </div>
+                      </div>
+                    }
                   />
                 </section>
                 <Show when={state.reviewOpened}>

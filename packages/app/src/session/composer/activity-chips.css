@@ -1,0 +1,65 @@
+[data-component="session-activity-glyph"] {
+  display: block;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+/* One wave runs diagonally across the 5×5 grid, as in the iOS app's agent activity glyph. */
+[data-component="session-activity-glyph"] [data-dot] {
+  animation: session-activity-glyph 1.1s linear infinite;
+  animation-delay: calc(var(--session-activity-glyph-phase, 0ms) + (var(--diagonal) / 8 - 1) * 1.1s);
+}
+
+[data-component="session-activity-glyph"] [data-reduced-motion] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="session-activity-glyph"] [data-dot] {
+    display: none;
+  }
+
+  [data-component="session-activity-glyph"] [data-reduced-motion] {
+    display: block;
+  }
+}
+
+/* opacity = 0.16 + 0.84 * wave³, wave = (1 + cos 2πt) / 2 */
+@keyframes session-activity-glyph {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  5%,
+  95% {
+    opacity: 0.94;
+  }
+  10%,
+  90% {
+    opacity: 0.782;
+  }
+  15%,
+  85% {
+    opacity: 0.58;
+  }
+  20%,
+  80% {
+    opacity: 0.396;
+  }
+  25%,
+  75% {
+    opacity: 0.265;
+  }
+  30%,
+  70% {
+    opacity: 0.195;
+  }
+  35%,
+  65% {
+    opacity: 0.167;
+  }
+  40%,
+  60% {
+    opacity: 0.16;
+  }
+}
