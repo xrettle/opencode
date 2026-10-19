@@ -849,14 +849,16 @@ export function DialogSelectModel(props: { provider?: string; model?: ModelState
         <Show when={row.item.latest}>
           <Badge class="shrink-0">{language.t("model.tag.latest")}</Badge>
         </Show>
-        <Show when={variantsOf(row.item).length > 0}>
-          <span
-            data-slot="model-dialog-variant"
-            class="w-[72px] shrink-0 truncate text-end capitalize"
-            classList={{ invisible: !selected() && !active() }}
-          >
-            {variant(row.item) ?? language.t("common.default")}
-          </span>
+        <Show when={variantsOf(row.item).length > 0 && variant(row.item)}>
+          {(name) => (
+            <span
+              data-slot="model-dialog-variant"
+              class="w-[72px] shrink-0 truncate text-end capitalize"
+              classList={{ invisible: !selected() && !active() }}
+            >
+              {name()}
+            </span>
+          )}
         </Show>
         <span class="flex size-4 shrink-0 items-center justify-center">
           <Show when={selected()}>
