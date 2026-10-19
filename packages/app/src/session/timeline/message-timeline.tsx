@@ -141,7 +141,7 @@ function MessageTimelineView(
     const projects = server.ctx.sync.data.project
 
     return session
-      ? server.ctx.projects.detailsForSession(session)
+      ? server.ctx.projects.forSession(session)
       : projects.find((item) => containsDirectory(item.worktree, sessionDirectory()))
   })
 

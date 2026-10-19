@@ -132,7 +132,7 @@ export function SessionProjectMenu(props: {
                 const project = props.project
 
                 if (!project) return
-                server.ctx.projects.open(project.worktree)
+                server.ctx.projects.touch(project.worktree)
                 layout.home.setSelection({ server: server.key, directory: project.worktree })
                 navigate("/")
               }}
