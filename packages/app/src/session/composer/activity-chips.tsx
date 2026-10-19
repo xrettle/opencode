@@ -21,6 +21,9 @@ export function SessionActivityChips(props: {
 }) {
   const language = useLanguage()
 
+  // With one kind running, the capsule row already names it.
+  const both = () => props.subagents.length > 0 && props.shells.length > 0
+
   const label = () => language.activitySummary({ subagents: props.subagents.length, shells: props.shells.length })
 
   return (
@@ -31,16 +34,18 @@ export function SessionActivityChips(props: {
             as="button"
             type="button"
             data-slot="session-activity-chip"
-            class="flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-full border border-v2-border-border-base bg-v2-background-bg-base ps-2 pe-2.5 text-[13px] font-[530] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out animate-in fade-in motion-reduce:animate-none hover:bg-v2-background-bg-layer-01 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus data-[expanded]:bg-v2-background-bg-layer-01"
+            class="flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-full border border-v2-border-border-base bg-v2-background-bg-base ps-2 pe-2.5 text-[13px] font-[530] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out animate-in fade-in motion-reduce:animate-none hover:bg-v2-background-bg-layer-01 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus"
           >
             <SessionActivityGlyph />
             <span class="truncate">{label()}</span>
           </Menu.Trigger>
           <Menu.Portal>
-            <Menu.Content class="w-72 max-w-[calc(100vw-24px)]" aria-label={label()}>
+            <Menu.Content data-slot="session-activity-panel" aria-label={label()}>
               <Show when={props.subagents.length > 0}>
                 <Menu.Group>
-                  <Menu.GroupLabel>{language.t("session.activity.section.subagents")}</Menu.GroupLabel>
+                  <Show when={both()}>
+                    <Menu.GroupLabel>{language.t("session.activity.section.subagents")}</Menu.GroupLabel>
+                  </Show>
                   <For each={props.subagents}>
                     {(item) => (
                       <Menu.Item onSelect={() => props.onOpen(item)}>
@@ -58,17 +63,22 @@ export function SessionActivityChips(props: {
                   </For>
                 </Menu.Group>
               </Show>
-              <Show when={props.subagents.length > 0 && props.shells.length > 0}>
+              <Show when={both()}>
                 <Menu.Separator />
               </Show>
               <Show when={props.shells.length > 0}>
                 <Menu.Group>
-                  <Menu.GroupLabel>{language.t("session.activity.section.shells")}</Menu.GroupLabel>
+                  <Show when={both()}>
+                    <Menu.GroupLabel>{language.t("session.activity.section.shells")}</Menu.GroupLabel>
+                  </Show>
                   <For each={props.shells}>
                     {(item) => (
                       <Menu.Item onSelect={() => props.onOpen(item)}>
                         <Icon name="console" class="shrink-0 text-v2-icon-icon-muted" />
-                        <span dir="ltr" class="me-1.5 min-w-0 flex-1 truncate font-mono text-v2-text-text-base">
+                        <span
+                          dir="ltr"
+                          class="me-1.5 min-w-0 flex-1 truncate font-mono text-[12px] text-v2-text-text-base"
+                        >
                           {item.label}
                         </span>
                       </Menu.Item>

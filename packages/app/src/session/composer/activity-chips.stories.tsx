@@ -17,8 +17,8 @@ import type { SessionActivityItem } from "./activity-chips"
 const timelineDetail = timelinePresets[2].value
 
 const subagents = [
+  { id: "ses_child_scroll", agent: "general", description: "Investigate Linux scroll jacking" },
   { id: "ses_child_audit", agent: "explore", description: "Audit the timeline projection" },
-  { id: "ses_child_review", agent: "general", description: "Review the composer dock" },
   { id: "ses_child_search", agent: "explore", description: "Search for shell metadata" },
 ]
 
@@ -233,7 +233,7 @@ export const TwoSubagents = { render: preview(2, 2, 0) }
 
 export const OneShell = { render: preview(7, 0, 1) }
 
-export const SubagentsAndShells = { render: preview(3, 2, 1) }
+export const SubagentsAndShells = { render: preview(4, 2, 2) }
 
 export const ManySubagents = { render: preview(4, 12, 2) }
 
