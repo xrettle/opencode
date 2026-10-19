@@ -804,7 +804,7 @@ test.describe("background shortcut", () => {
     await expectBackgroundRequest(page)
   })
 
-  for (const name of ["read", "shell", "subagent"] as const) {
+  for (const name of ["read", "shell"] as const) {
     test(`keeps Working and the shortcut for a grouped running ${name}`, async ({ page }) => {
       await setupTimeline(page, {
         viewport: { width: name === "shell" ? 390 : 1400, height: 900 },
@@ -818,11 +818,7 @@ test.describe("background shortcut", () => {
                 "prt_grouped_active",
                 name,
                 "running",
-                {
-                  read: { filePath: "src/working.ts" },
-                  shell: { command: "sleep 10" },
-                  subagent: { agent: "general", description: "Inspect the timeline", prompt: "Inspect it." },
-                }[name],
+                { read: { filePath: "src/working.ts" }, shell: { command: "sleep 10" } }[name],
               ),
             ],
             { completed: false },
@@ -835,24 +831,20 @@ test.describe("background shortcut", () => {
       await expect(trigger).toHaveAttribute("aria-expanded", "false")
       await expect(working).toBeInViewport()
 
-      if (name !== "read") {
+      if (name === "shell") {
         await expect(backgroundHint(page)).toBeInViewport()
         await expect(page.locator('[data-component="session-background-hint-row"]')).toHaveCSS("height", "24px")
       }
 
       await trigger.click()
       await expect(trigger).toHaveAttribute("aria-expanded", "true")
-
-      if (name === "subagent") await expect(group.getByText("Inspect the timeline", { exact: true })).toBeVisible()
-
-      if (name !== "subagent")
-        await expect(group.locator('[data-component="text-shimmer"][data-active="true"]')).toBeVisible()
+      await expect(group.locator('[data-component="text-shimmer"][data-active="true"]')).toBeVisible()
       await expect(working).toBeVisible()
       await trigger.click()
       await expect(trigger).toHaveAttribute("aria-expanded", "false")
       await expect(working).toBeVisible()
 
-      if (name !== "read") await expectBackgroundRequest(page)
+      if (name === "shell") await expectBackgroundRequest(page)
     })
   }
 
@@ -949,13 +941,17 @@ test.describe("background shortcut", () => {
       },
     })
     const backgroundCard = page.locator('[data-timeline-part-id="call_backgrounded"]')
+    const blockingCard = page.locator('[data-timeline-part-id="call_blocking"]')
     await expect(backgroundHint(page)).toBeVisible()
+    await expect(backgroundCard).toContainText("Background task (background)")
+    await expect(blockingCard).toContainText("Foreground task")
+    await expect(blockingCard).not.toContainText("(background)")
 
     const used = page
-      .locator('[data-timeline-part-ids="call_backgrounded,call_shell_backgrounded,call_blocking"]')
+      .locator('[data-timeline-part-ids="call_shell_backgrounded"]')
       .locator(':scope > [data-component="collapsible"] > [data-slot="collapsible-trigger"]')
 
-    await expect(used).toHaveText(/^Used\s*3\s*Agent, Shell$/)
+    await expect(used).toHaveText(/^Used\s*1\s*Shell$/)
     await expect(used).toHaveAttribute("aria-expanded", "false")
     const activity = page.getByRole("button", { name: "2 subagents · 1 shell", exact: true })
     const list = page.getByRole("menu", { name: "2 subagents · 1 shell", exact: true })
