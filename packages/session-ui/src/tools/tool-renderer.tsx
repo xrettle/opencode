@@ -229,7 +229,7 @@ function displayDirectory(path: string | undefined) {
 
 import { resolveFileDiff } from "../components/session-diff"
 
-function taskAgentName(raw: string | undefined, list?: readonly { name: string }[]) {
+export function taskAgentName(raw: string | undefined, list?: readonly { name: string }[]) {
   if (!raw) return undefined
   const key = raw.toLowerCase()
 

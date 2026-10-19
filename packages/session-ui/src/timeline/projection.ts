@@ -17,7 +17,7 @@ import {
   currentToolHasLoadedFiles,
 } from "../message/current-tool-state"
 import { TimelineRow, type PartGroup, type PartRef, type TimelineRowMap } from "./timeline-row"
-import { timelineCategory, timelineNoticeRequired, type TimelineDetail } from "./detail"
+import { timelineCategory, timelineNoticePlacement, timelineNoticeRequired, type TimelineDetail } from "./detail"
 
 export { TimelineRow, type PartGroup, type PartRef, type TimelineRowMap }
 
@@ -371,8 +371,7 @@ export namespace Timeline {
       !(detail?.commentary.placement === "hidden" && commentary.has(content)) &&
       isRenderable(content, showReasoning, detail)
 
-    const visibleNotice = (message: Notice) =>
-      !detail || detail.notices.placement !== "hidden" || timelineNoticeRequired(message)
+    const visibleNotice = (message: Notice) => !detail || timelineNoticePlacement(message, detail) !== "hidden"
 
     const visibleTurns = detail
       ? turns.filter((turn) => {
@@ -459,7 +458,8 @@ export namespace Timeline {
               messages.flatMap((message) =>
                 message.type === "compaction" ||
                 message.type === "model-switched" ||
-                message.type === "location-switched"
+                message.type === "location-switched" ||
+                (message.type === "synthetic" && timelineNoticePlacement(message, detail) === "separate")
                   ? [message.id]
                   : [],
               ),
@@ -619,7 +619,7 @@ export namespace Timeline {
 
           return
         case "notice":
-          if (detail?.notices.placement === "hidden" && !timelineNoticeRequired(entry.message)) return
+          if (detail && timelineNoticePlacement(entry.message, detail) === "hidden") return
           appendAssistantSegment(assistantSegment)
           assistantSegment = []
           rows.push(new TimelineRow.Notice({ userMessageID: turnID, messageID: entry.message.id }))

@@ -8,6 +8,7 @@ import { useI18n } from "@opencode/ui/context/i18n"
 import { Option, Predicate, Schema } from "effect"
 import { For, Show, createEffect, createMemo, type Accessor, type JSX } from "solid-js"
 import { DiffChanges } from "@opencode/ui/diff-changes"
+import { Icon } from "@opencode/ui/icon"
 import { Dynamic } from "solid-js/web"
 import type { SessionUserActions, SessionUserAttachmentReference, SessionUserComment } from "../actions"
 import { useData } from "../context"
@@ -26,7 +27,7 @@ import {
   SessionCompactionMessage,
   SessionCompactionQueued,
 } from "../message/message-content"
-import { ToolRegistry, type ContextGroupPart } from "../tools/tool-renderer"
+import { taskAgentName, ToolRegistry, type ContextGroupPart } from "../tools/tool-renderer"
 import { GenericTool } from "../components/basic-tool"
 import { SessionRetry } from "../components/session-retry"
 import { SessionError } from "../components/session-error"
@@ -51,6 +52,8 @@ const decodeMetadataFile = Schema.decodeUnknownOption(Schema.Struct({ file: Sche
 type Projection = ReturnType<typeof createReactiveTimelineProjection>
 
 type FramedTimelineRow = Exclude<TimelineRow.TimelineRow, TimelineRow.TurnGap>
+
+type Outcome = "completed" | "error" | "cancelled"
 
 export type SessionUserPresentation = {
   displayText?: string
@@ -465,15 +468,16 @@ export function createSessionTimelineRowRenderer(input: {
       const actor =
         source === "shell"
           ? i18n.t("ui.tool.shell")
-          : Predicate.isString(agent)
-            ? agent
-            : i18n.t("ui.tool.agent.default")
+          : ((Predicate.isString(agent) ? taskAgentName(agent, data.store.agent) : undefined) ??
+            i18n.t("ui.tool.agent.default"))
 
       const state = message.metadata?.state
+      const outcome: Outcome = state === "error" || state === "cancelled" ? state : "completed"
 
       return {
-        label: i18n.t(outcomeNoticeKey(Predicate.isString(state) ? state : undefined), { actor }),
+        label: i18n.t(outcomeNoticeKey(outcome), { actor }),
         data: message.description,
+        outcome,
       }
     }
 
@@ -615,17 +619,27 @@ export function createSessionTimelineRowRenderer(input: {
                         <Dynamic
                           component={href() ? "a" : "div"}
                           data-slot="session-timeline-notice"
+                          data-outcome={content().outcome}
                           class={`block w-full truncate ${props.grouped ? "py-1" : "pt-3 pb-1"} text-13-regular leading-text-compact text-text-weak ${inset()}`}
-                          classList={{ "cursor-pointer": clickable() }}
+                          classList={{ "cursor-pointer hover:text-v2-text-text-base": clickable() }}
                           href={href()}
                           role={clickable() && !href() ? "link" : undefined}
                           tabIndex={clickable() && !href() ? 0 : undefined}
                           onClick={navigate}
                           onKeyDown={navigateKey}
                         >
+                          <Show when={content().outcome}>
+                            {(outcome) => (
+                              <Icon
+                                name={outcomeNoticeIcon(outcome())}
+                                size="normal"
+                                class={`inline-block align-top me-2 ${outcomeNoticeColor(outcome())}`}
+                              />
+                            )}
+                          </Show>
                           <bdi
                             dir="auto"
-                            class="font-[530]"
+                            class={`font-[530] ${outcomeNoticeColor(content().outcome)}`}
                             classList={{ "text-v2-text-text-faint": message()?.type === "agent-switched" }}
                           >
                             {content().label}
@@ -1043,6 +1057,24 @@ export function createSessionTimelineRowRenderer(input: {
 
 function capitalizeAgent(agent: string) {
   return agent.slice(0, 1).toUpperCase() + agent.slice(1)
+}
+
+function outcomeNoticeIcon(outcome: Outcome) {
+  if (outcome === "error") return "warning"
+
+  if (outcome === "cancelled") return "circle-ban-sign"
+
+  return "circle-check"
+}
+
+function outcomeNoticeColor(outcome: Outcome | undefined) {
+  if (!outcome) return ""
+
+  if (outcome === "error") return "text-v2-state-fg-danger"
+
+  if (outcome === "cancelled") return "text-v2-state-fg-warning"
+
+  return "text-v2-state-fg-info"
 }
 
 function outcomeNoticeKey(state: string | undefined) {

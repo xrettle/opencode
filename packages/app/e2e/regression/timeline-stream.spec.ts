@@ -11,6 +11,8 @@ import {
   compactionStarted,
   completedAssistantInfo,
   directory,
+  inboxDelivered,
+  inboxEnqueued,
   messageUpdated,
   partUpdated,
   reasoningPart,
@@ -75,7 +77,7 @@ test.describe("static projection", () => {
     const notices = page.locator('[data-slot="session-timeline-notice"]')
     await expect(notices).toHaveCount(4)
     await expect(notices.nth(0)).toHaveText(/^Agent changed\s*Explore$/)
-    await expect(notices.nth(1)).toContainText("explore finished · Search code")
+    await expect(notices.nth(1)).toContainText("Explore finished · Search code")
     await expect(notices.nth(2)).toContainText("Continuing after restart")
     await expect(notices.nth(3)).toContainText("Skill · Review")
     await expect(notices).toHaveClass([/text-text-weak/, /text-text-weak/, /text-text-weak/, /text-text-weak/])
@@ -547,6 +549,102 @@ for (const shellDefault of ["collapsed", "expanded"] as const) {
     await expect(thought).toHaveAttribute("aria-expanded", String(thoughtOpen))
   })
 }
+
+test("shows a background subagent's outcome as its own row where it finished", async ({ page }) => {
+  const childID = "ses_background_outcome"
+  const after = assistantMessage([], { id: "msg_after", completed: false })
+
+  const timeline = await setupTimeline(page, {
+    sessionMessages: [
+      user,
+      {
+        id: "msg_launch",
+        type: "assistant",
+        agent: "build",
+        model: { id: "model", providerID: "provider" },
+        content: [
+          {
+            type: "tool",
+            id: "call_background",
+            name: "subagent",
+            state: {
+              status: "completed",
+              input: { description: "Map the inbox", agent: "explore", background: true },
+              content: [{ type: "text", text: "working" }],
+              metadata: { sessionID: childID, status: "running" },
+            },
+            time: { created: 2, completed: 3 },
+          },
+          {
+            type: "tool",
+            id: "call_read_before",
+            name: "read",
+            state: {
+              status: "completed",
+              input: { filePath: "README.md" },
+              content: [{ type: "text", text: "ok" }],
+              metadata: {},
+            },
+            time: { created: 2, completed: 3 },
+          },
+        ],
+        time: { created: 2, completed: 3 },
+      },
+    ],
+    sessions: [session(), session({ id: childID, parentID: sessionID, title: "Map the inbox" })],
+  })
+
+  await expect(page.getByText(/^Used\s*1\s*Read$/)).toBeVisible()
+
+  await timeline.send([
+    inboxEnqueued({
+      sessionID,
+      inboxID: "msg_outcome",
+      item: {
+        type: "synthetic",
+        payload: {
+          text: '<subagent state="completed">done</subagent>',
+          description: "Map the inbox",
+          metadata: { source: "subagent", childID, agent: "explore", state: "completed" },
+        },
+        delivery: "steer",
+      },
+    }),
+    inboxDelivered({ sessionID, inboxID: "msg_outcome" }),
+    stepStarted(after),
+    ...partUpdated({ ...toolPart("call_read_after", "read", "completed", { filePath: "AGENTS.md" }), messageID: after.id }),
+    messageUpdated(completedAssistantInfo(after)),
+  ])
+
+  // The outcome sits between the work before and after it instead of folding into either group.
+  const notice = page.locator('[data-slot="session-timeline-notice"]')
+  await expect(page.getByText(/^Used\s*1\s*Read$/).or(notice)).toHaveText([
+    /^Used\s*1\s*Read$/,
+    /^Explore finished · Map the inbox$/,
+    /^Used\s*1\s*Read$/,
+  ])
+  await expect(notice).toHaveAttribute("data-outcome", "completed")
+
+  // The outcome icon starts at the column edge like the subagent card, in a 16px box centered on the text line.
+  await expect
+    .poll(async () => {
+      const [card, icon, label] = await Promise.all([
+        page.locator('[data-component="task-tool-card"]').boundingBox(),
+        notice.locator('[data-slot="icon-svg"]').boundingBox(),
+        notice.locator(":scope > bdi").boundingBox(),
+      ])
+
+      return {
+        inset: icon!.x - card!.x,
+        size: [icon!.width, icon!.height],
+        gap: label!.x - icon!.x - icon!.width,
+        centered: Math.abs(icon!.y + icon!.height / 2 - (label!.y + label!.height / 2)) <= 0.5,
+      }
+    })
+    .toEqual({ inset: 0, size: [16, 16], gap: 8, centered: true })
+  await notice.click()
+  await expect(page).toHaveURL(new RegExp(`/session/${childID}$`))
+})
 
 test.describe("Working", () => {
   test("shows Working between busy and reasoning states", async ({ page }) => {

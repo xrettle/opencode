@@ -354,6 +354,14 @@ export function event(
   return makeEvent(type, data)
 }
 
+export function inboxEnqueued(data: Extract<OpenCodeEvent, { type: "session.inbox.enqueued" }>["data"]) {
+  return makeEvent("session.inbox.enqueued", data)
+}
+
+export function inboxDelivered(data: Extract<OpenCodeEvent, { type: "session.inbox.delivered" }>["data"]) {
+  return makeEvent("session.inbox.delivered", data)
+}
+
 export function compactionStarted(data: Extract<OpenCodeEvent, { type: "session.compaction.started" }>["data"]) {
   return makeEvent("session.compaction.started", data)
 }

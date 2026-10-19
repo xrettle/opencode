@@ -555,6 +555,69 @@ describe("current session timeline rows", () => {
   })
 
   test.each([
+    ["everything", ["msg_agent", "msg_shell"]],
+    ["detailed", ["msg_agent", "msg_shell"]],
+    ["compact", ["msg_agent", "msg_shell"]],
+    ["quiet", ["msg_agent"]],
+    ["text-only", []],
+  ] as const)("shows background outcomes as their own rows where they finished: %s", (id, notices) => {
+    const step = (messageID: string, created: number) =>
+      ({
+        id: messageID,
+        type: "assistant",
+        agent: "build",
+        model: { id: "model", providerID: "provider" },
+        content: [storyTool(`${messageID}_read`, "read", "completed", {})],
+        time: { created, completed: created },
+      }) satisfies SessionMessageInfo
+
+    const source: SessionMessageInfo[] = [
+      { id: "msg_user", type: "user", text: "work", time: { created: 1 } },
+      step("msg_before", 2),
+      {
+        id: "msg_agent",
+        type: "synthetic",
+        text: "done",
+        description: "Map the inbox",
+        metadata: { source: "subagent", childID: "ses_child", agent: "explore", state: "completed" },
+        time: { created: 3 },
+      },
+      {
+        id: "msg_shell",
+        type: "synthetic",
+        text: "done",
+        description: "bun test",
+        metadata: { source: "shell", shellID: "sh_1", state: "completed", exit: 0 },
+        time: { created: 4 },
+      },
+      step("msg_after", 5),
+    ]
+
+    const rows = Timeline.constructSessionMessageRows(
+      source,
+      false,
+      { type: "idle" },
+      undefined,
+      false,
+      false,
+      undefined,
+      timelinePresets.find((preset) => preset.id === id)!.value,
+    ).rows
+
+    const keys = rows.map(TimelineRow.key)
+    expect(keys.filter((key) => key.startsWith("notice:"))).toEqual(notices.map((notice) => `notice:${notice}`))
+
+    if (id === "compact")
+      expect(keys).toEqual([
+        "user-message:msg_user",
+        "assistant-part:context:context:msg_before:msg_before_read",
+        "notice:msg_agent",
+        "notice:msg_shell",
+        "assistant-part:context:context:msg_after:msg_after_read",
+      ])
+  })
+
+  test.each([
     ["grouped", "assistant-part:context:context:msg_a1:msg_a1:text:0"],
     ["hidden", "assistant-part:context:context:msg_a1:tool_read"],
   ] as const)("%s commentary keeps the answer of each turn", (placement, group) => {
