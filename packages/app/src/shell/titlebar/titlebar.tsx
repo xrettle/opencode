@@ -459,7 +459,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                     value={
                       <>
                         {language.t("command.session.search")}
-                        <Keybind keys={command.keybindParts("session.search")} variant="neutral" />
+                        <Keybind keys={command.keybindParts("sessions.search")} variant="neutral" />
                       </>
                     }
                     class="shrink-0"
@@ -470,7 +470,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                       size="large"
                       class="!w-9 shrink-0"
                       icon={<Icon name="magnifying-glass" />}
-                      onClick={() => command.trigger("session.search")}
+                      onClick={() => command.trigger("sessions.search")}
                       aria-label={language.t("command.session.search")}
                     />
                   </Tooltip>
@@ -481,7 +481,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                   data-titlebar-tab-action
                   data-action="vertical-tabs-search"
                   class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[13px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base"
-                  onClick={() => command.trigger("session.search")}
+                  onClick={() => command.trigger("sessions.search")}
                 >
                   <Icon name="magnifying-glass" class="shrink-0" />
                   <span class="min-w-0 truncate">{language.t("command.session.search")}</span>
@@ -489,7 +489,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                     class="ms-auto hidden min-w-0 truncate text-v2-text-text-faint group-hover:block group-focus-visible:block"
                     aria-hidden="true"
                   >
-                    <bdi dir="ltr">{command.keybind("session.search")}</bdi>
+                    <bdi dir="ltr">{command.keybind("sessions.search")}</bdi>
                   </span>
                 </button>
               </Show>
@@ -508,7 +508,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 },
               },
               {
-                id: "session.search",
+                id: "sessions.search",
                 title: language.t("command.session.search"),
                 category: language.t("command.category.session"),
                 onSelect: async () => {
