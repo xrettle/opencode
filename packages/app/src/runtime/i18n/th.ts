@@ -252,10 +252,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} จาก {{total}} ที่เปิดใช้งาน",
   "dialog.mcp.empty": "ไม่มี MCP ที่กำหนดค่า",
 
-  "mcp.status.connected": "เชื่อมต่อแล้ว",
-  "mcp.status.failed": "ล้มเหลว",
-  "mcp.status.needs_auth": "ต้องยืนยันตัวตน",
-  "mcp.status.disabled": "ปิดใช้งาน",
 
   "dialog.fork.empty": "ไม่มีข้อความให้แตกแขนง",
 

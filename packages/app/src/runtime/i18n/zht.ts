@@ -254,10 +254,6 @@ export const dict = {
   "dialog.mcp.description": "已啟用 {{enabled}} / {{total}}",
   "dialog.mcp.empty": "未設定 MCP",
 
-  "mcp.status.connected": "已連線",
-  "mcp.status.failed": "失敗",
-  "mcp.status.needs_auth": "需要授權",
-  "mcp.status.disabled": "已停用",
 
   "dialog.fork.empty": "沒有可用於分支的訊息",
 

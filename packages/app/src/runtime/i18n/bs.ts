@@ -244,10 +244,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} od {{total}} omogućeno",
   "dialog.mcp.empty": "Nema konfigurisanih MCP-ova",
 
-  "mcp.status.connected": "povezano",
-  "mcp.status.failed": "neuspjelo",
-  "mcp.status.needs_auth": "potrebna autentifikacija",
-  "mcp.status.disabled": "onemogućeno",
 
   "dialog.fork.empty": "Nema poruka za fork",
 

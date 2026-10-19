@@ -376,10 +376,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} af {{total}} aktiveret",
   "dialog.mcp.empty": "Ingen MCP'er konfigureret",
 
-  "mcp.status.connected": "forbundet",
-  "mcp.status.failed": "mislykkedes",
-  "mcp.status.needs_auth": "kræver godkendelse",
-  "mcp.status.disabled": "deaktiveret",
 
   "dialog.fork.empty": "Ingen beskeder at forgrene fra",
 

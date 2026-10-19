@@ -256,10 +256,6 @@ export const dict = {
   "dialog.mcp.description": "Toplam {{total}} öğeden {{enabled}} tanesi etkin",
   "dialog.mcp.empty": "Yapılandırılmış MCP yok",
 
-  "mcp.status.connected": "bağlı",
-  "mcp.status.failed": "başarısız",
-  "mcp.status.needs_auth": "kimlik doğrulama gerekli",
-  "mcp.status.disabled": "devre dışı",
 
   "dialog.fork.empty": "Dallandırılacak mesaj yok",
 

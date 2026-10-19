@@ -129,12 +129,27 @@ for (const surface of ["popover", "dialog"] as const) {
       .filter({ has: page.getByText("Request failed", { exact: true }) })
 
     await expect(toast.getByText(`figma-desktop: ${error}`, { exact: true })).toBeVisible()
-    await expect(view.toggle).toBeChecked({ checked: surface === "popover" })
-    await expect(view.toggle).toBeEnabled()
+    // The dialog replaces a failed server's switch with a button that opens its error.
+    const failed = view.panel.getByRole("button", { name: "figma-desktop failed, view error", exact: true })
+    const details = page.getByRole("dialog", { name: "MCP server: figma-desktop", exact: true })
+
+    if (surface === "popover") {
+      await expect(view.toggle).toBeChecked()
+      await expect(view.toggle).toBeEnabled()
+    }
+
+    if (surface === "dialog") await expect(view.toggle).toHaveCount(0)
     expect(view.requests.filter((request) => request.path.endsWith("/connect"))).toEqual([
       { path: "/api/experimental/mcp/figma-desktop/connect", directory: workspace },
     ])
     expect(view.requests.every((request) => request.directory === workspace)).toBe(true)
+
+    if (surface === "dialog") {
+      await failed.click()
+      await expect(details.getByText(error, { exact: true })).toBeVisible()
+      await details.getByRole("button", { name: "Navigate back", exact: true }).click()
+      await expect(failed).toBeVisible()
+    }
 
     if (surface === "popover") await page.keyboard.press("Escape")
 
@@ -146,9 +161,17 @@ for (const surface of ["popover", "dialog"] as const) {
     await expect(page.getByRole("dialog", { name: "Session details", exact: true })).toBeHidden()
     await view.show()
     await reset()
-    await expect(view.toggle).not.toBeChecked()
-    await expect(view.toggle).toBeEnabled()
-    await view.panel.locator('[data-slot="switch-control"]').click()
+
+    if (surface === "dialog") {
+      await failed.click()
+      await details.getByRole("button", { name: "Try again", exact: true }).click()
+    }
+
+    if (surface === "popover") {
+      await expect(view.toggle).not.toBeChecked()
+      await expect(view.toggle).toBeEnabled()
+      await view.panel.locator('[data-slot="switch-control"]').click()
+    }
     await expect(view.toggle).toBeChecked()
     await expect(view.toggle).toBeEnabled()
     await expect(toast).toBeHidden()

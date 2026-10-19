@@ -255,10 +255,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} dari {{total}} diaktifkan",
   "dialog.mcp.empty": "Tidak ada MCP yang dikonfigurasi",
 
-  "mcp.status.connected": "terhubung",
-  "mcp.status.failed": "gagal",
-  "mcp.status.needs_auth": "perlu autentikasi",
-  "mcp.status.disabled": "nonaktif",
 
   "dialog.fork.empty": "Tidak ada pesan yang dapat dicabangkan",
 

@@ -243,10 +243,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} из {{total}} включено",
   "dialog.mcp.empty": "MCP не настроены",
 
-  "mcp.status.connected": "подключено",
-  "mcp.status.failed": "ошибка",
-  "mcp.status.needs_auth": "требуется авторизация",
-  "mcp.status.disabled": "отключено",
 
   "dialog.fork.empty": "Нет сообщений для ответвления",
 

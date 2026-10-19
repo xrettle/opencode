@@ -270,10 +270,6 @@ export const dict = {
   "dialog.mcp.description": "已启用 {{enabled}} / {{total}}",
   "dialog.mcp.empty": "未配置 MCP 服务器",
 
-  "mcp.status.connected": "已连接",
-  "mcp.status.failed": "失败",
-  "mcp.status.needs_auth": "需要授权",
-  "mcp.status.disabled": "已禁用",
 
   "dialog.fork.empty": "没有可用于创建新会话的消息",
 

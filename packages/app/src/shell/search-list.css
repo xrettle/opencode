@@ -81,9 +81,10 @@
   font-weight: 440;
 }
 
+/* A zero basis lays the title out at full width first; the detail only fills what is left. */
 .search-list-detail {
   min-width: 0;
-  flex-shrink: 10;
+  flex: 1 1 0;
   overflow: hidden;
   color: var(--v2-text-text-muted);
   font-weight: 440;

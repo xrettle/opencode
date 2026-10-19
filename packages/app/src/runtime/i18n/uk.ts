@@ -272,10 +272,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} з {{total}} увімкнено",
   "dialog.mcp.empty": "MCP не налаштовано",
 
-  "mcp.status.connected": "підключено",
-  "mcp.status.failed": "помилка",
-  "mcp.status.needs_auth": "потрібна авторизація",
-  "mcp.status.disabled": "вимкнено",
 
   "dialog.fork.empty": "Немає повідомлень для відгалуження",
 

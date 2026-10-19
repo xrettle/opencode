@@ -463,10 +463,6 @@ export const dict = {
   "dialog.mcp.description": "{{enabled}} de {{total}} habilitados",
   "dialog.mcp.empty": "No hay servidores MCP configurados",
 
-  "mcp.status.connected": "conectado",
-  "mcp.status.failed": "fallido",
-  "mcp.status.needs_auth": "requiere autenticación",
-  "mcp.status.disabled": "deshabilitado",
 
   "dialog.fork.empty": "No hay mensajes desde donde bifurcar",
 
