@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test"
 import type { OpenCodeEvent, SessionMessageInfo } from "@opencode/client/promise"
 import { Permission } from "@opencode/schema/permission"
+import { Model } from "@opencode/schema/model"
 import { Worktree } from "@opencode/schema/worktree"
 import { Duration, Effect, Layer, Option, Predicate, Schema } from "effect"
 import { HttpRouter, HttpServer, HttpServerResponse } from "effect/http"
@@ -1429,6 +1430,7 @@ function location(config: MockServerConfig, directory = config.directory) {
         (root) => root !== undefined && (directory === root || directory.startsWith(`${root}/`)),
       ),
     )
+
   const root = listed ? (listed.canonical ?? listed.worktree) : undefined
 
   if (listed && root) return { directory, project: { id: listed.id, directory: root, canonical: root } }
@@ -1475,7 +1477,7 @@ function currentModels(catalog: MockProviderCatalog) {
           modelID: model.api?.id ?? model.id,
           providerID: provider.id,
           name: model.name,
-          capabilities: { tools: true, input: ["text"], output: ["text"] },
+          capabilities: model.capabilities ?? { tools: true, input: ["text"], output: ["text"] },
           variants: Object.entries(model.variants ?? {}).map(([id, settings]) =>
             Predicate.isObject(settings) ? { id, settings } : { id },
           ),
@@ -1610,6 +1612,7 @@ const decodeModel = Schema.decodeUnknownOption(
     api: lenient(Schema.Struct({ id: Schema.String })),
     limit: lenient(Schema.Struct({ context: lenient(Schema.Number), output: lenient(Schema.Number) })),
     cost: lenient(Schema.Struct({ input: lenient(Schema.Number), output: lenient(Schema.Number) })),
+    capabilities: lenient(Model.Capabilities),
     variants: lenient(Schema.Record(Schema.String, Schema.Unknown)),
   }),
 )

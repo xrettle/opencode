@@ -118,6 +118,7 @@ function createGlobalModels() {
   const [store, setStore, _, ready] = persisted(Persist.global("model"), ModelState, {
     user: [],
     recent: [],
+    favorite: [],
     variant: {},
   })
 
@@ -137,6 +138,11 @@ function createGlobalModels() {
       loaded()
 
       return store.recent
+    },
+    favorite: () => {
+      loaded()
+
+      return store.favorite
     },
     // Marks models visible in the picker regardless of the "latest per family" default.
     show(models: ReadonlyArray<{ providerID: string; modelID: string }>) {
@@ -265,7 +271,7 @@ function createServerController(
 
         return list().find((project) => project.id === location.project.id)
       })
-      .catch((error: unknown) => {
+      .catch((error) => {
         showToast({
           variant: "error",
           title: language.t("common.requestFailed"),
