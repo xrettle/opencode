@@ -355,7 +355,7 @@ function SessionScreenContent(props: {
             data-scrollbar-hidden={store.timelineScrollbarHidden || store.sideWidthMotion}
             onPointerMove={revealTimelineScrollbar}
             onPointerDown={revealTimelineScrollbar}
-            onWheel={revealTimelineScrollbar}
+            on:wheel={{ passive: true, handleEvent: revealTimelineScrollbar }}
             onKeyDown={revealTimelineScrollbar}
             onTransitionRun={trackSideWidthMotion}
             onTransitionEnd={trackSideWidthMotion}
