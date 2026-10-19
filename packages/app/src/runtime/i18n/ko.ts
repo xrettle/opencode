@@ -435,7 +435,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "서버를 사용할 수 없음",
   "error.childStore.persistedCacheCreateFailed": "영구 캐시 생성 실패",
   "error.childStore.persistedProjectMetadataCreateFailed": "영구 프로젝트 메타데이터 생성 실패",
-  "error.childStore.persistedProjectIconCreateFailed": "영구 프로젝트 아이콘 생성 실패",
   "error.childStore.storeCreateFailed": "저장소 생성 실패",
 
   "command.tab.reopenClosed": "닫은 탭 다시 열기",
@@ -595,7 +594,6 @@ export const dict = {
   "common.viewAll": "모두 보기",
   "session.new.workspace.local.tooltip": "현재 체크아웃 사용",
   "session.new.workspace.new.tooltip": "격리된 체크아웃 생성",
-  "session.new.workspace.fromBranch": "{{branch}}에서",
   "session.new.workspace.trigger.tooltip": "세션을 실행할 위치 선택",
   "session.new.workspace.search.placeholder": "작업 공간 검색",
   "settings.tab.workspaces": "작업 공간",
@@ -662,7 +660,6 @@ export const dict = {
     "후속 메시지를 대기열에 추가할지 현재 턴의 방향을 지시할지 선택하세요. {{keybind}}로 전환합니다.",
   "settings.general.row.followUpBehavior.queue": "대기열에 추가",
   "settings.general.row.followUpBehavior.steer": "방향 지시",
-  "session.new.workspace.branch.search.placeholder": "브랜치 검색",
   "toast.migration.progress.clearingOldEvents": "이전 이벤트 지우는 중",
   "toast.migration.progress.migratingSessions": "세션 마이그레이션 중",
   "session.new.workspace.existingLabel": "워크트리",

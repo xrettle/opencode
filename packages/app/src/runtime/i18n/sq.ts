@@ -283,7 +283,6 @@ export const dict = {
   "error.childStore.persistedCacheCreateFailed": "Dështoi në krijimin e memories së vazhdueshme",
   "error.childStore.persistedProjectMetadataCreateFailed":
     "Krijimi i meta të dhënave të vazhdueshme të projektit dështoi",
-  "error.childStore.persistedProjectIconCreateFailed": "Krijimi i ikonës së projektit të vazhdueshëm dështoi",
   "error.childStore.storeCreateFailed": "Krijimi i dyqanit dështoi",
   "error.chain.unknown": "Gabim i panjohur",
   "error.server.invalidConfiguration": "Konfigurim i pavlefshëm",
@@ -545,7 +544,6 @@ export const dict = {
   "common.viewAll": "Shfaq të gjitha",
   "session.new.workspace.local.tooltip": "Përdor checkout-in aktual",
   "session.new.workspace.new.tooltip": "Krijo një checkout të izoluar",
-  "session.new.workspace.fromBranch": "nga {{branch}}",
   "session.new.workspace.trigger.tooltip": "Zgjidhni ku të ekzekutohet sesioni",
   "session.new.workspace.search.placeholder": "Kërko hapësira pune",
   "settings.tab.workspaces": "Hapësirat e punës",
@@ -648,7 +646,6 @@ export const dict = {
     "Zgjidhni nëse mesazhet vijuese vendosen në radhë apo drejtojnë raundin aktual. Përdorni {{keybind}} për të ndërruar.",
   "settings.general.row.followUpBehavior.queue": "Vendos në radhë",
   "settings.general.row.followUpBehavior.steer": "Drejto",
-  "session.new.workspace.branch.search.placeholder": "Kërko degë",
   "toast.migration.progress.clearingOldEvents": "Po pastrohen ngjarjet e vjetra",
   "toast.migration.progress.migratingSessions": "Po migrohen sesionet",
   "session.new.workspace.existingLabel": "Pemë pune",

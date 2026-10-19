@@ -199,7 +199,6 @@ export const dict = {
     "Velg om oppfølginger skal legges i kø eller styre den gjeldende turen. Bruk {{keybind}} for å bytte.",
   "settings.general.row.followUpBehavior.queue": "Legg i kø",
   "settings.general.row.followUpBehavior.steer": "Styr",
-  "session.new.workspace.branch.search.placeholder": "Søk etter grener",
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "Arkiv",
   "desktop.menu.edit": "Rediger",
@@ -754,7 +753,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Server ikke tilgjengelig",
   "error.childStore.persistedCacheCreateFailed": "Kunne ikke opprette vedvarende hurtigbuffer",
   "error.childStore.persistedProjectMetadataCreateFailed": "Kunne ikke opprette vedvarende prosjektmetadata",
-  "error.childStore.persistedProjectIconCreateFailed": "Kunne ikke opprette vedvarende prosjektikon",
   "error.childStore.storeCreateFailed": "Kunne ikke opprette lager",
 
   "command.tab.reopenClosed": "Åpne lukket fane på nytt",
@@ -850,7 +848,6 @@ export const dict = {
   "common.viewAll": "Se alle",
   "session.new.workspace.local.tooltip": "Bruk gjeldende checkout",
   "session.new.workspace.new.tooltip": "Opprett isolert checkout",
-  "session.new.workspace.fromBranch": "fra {{branch}}",
   "session.new.workspace.trigger.tooltip": "Velg hvor du vil kjøre økten",
   "session.new.workspace.search.placeholder": "Søk i arbeidsområder",
   "settings.tab.workspaces": "Arbeidsområder",

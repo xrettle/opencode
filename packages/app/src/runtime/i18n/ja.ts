@@ -351,7 +351,6 @@ export const dict = {
   "session.new.workspace.local": "ローカルリポジトリ",
   "session.new.workspace.local.tooltip": "現在のチェックアウトを使用",
   "session.new.workspace.new.tooltip": "独立したチェックアウトを作成",
-  "session.new.workspace.fromBranch": "{{branch}}から",
   "session.new.workspace.trigger.tooltip": "セッションの実行先を選択",
   "session.new.workspace.search.placeholder": "ワークスペースを検索",
   "session.new.git.none": "Git なし",
@@ -618,7 +617,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "サーバーが利用できません",
   "error.childStore.persistedCacheCreateFailed": "永続キャッシュの作成に失敗しました",
   "error.childStore.persistedProjectMetadataCreateFailed": "永続プロジェクトメタデータの作成に失敗しました",
-  "error.childStore.persistedProjectIconCreateFailed": "永続プロジェクトアイコンの作成に失敗しました",
   "error.childStore.storeCreateFailed": "ストアの作成に失敗しました",
 
   "desktop.menu.installCli": "CLI をインストール...",
@@ -662,7 +660,6 @@ export const dict = {
     "フォローアップをキューに入れるか、現在のターンに方向を指示するかを選択します。{{keybind}}で切り替えます。",
   "settings.general.row.followUpBehavior.queue": "キューに追加",
   "settings.general.row.followUpBehavior.steer": "方向を指示",
-  "session.new.workspace.branch.search.placeholder": "ブランチを検索",
   "toast.migration.progress.clearingOldEvents": "古いイベントを消去中",
   "toast.migration.progress.migratingSessions": "セッションを移行中",
   "session.new.workspace.existingLabel": "ワークツリー",

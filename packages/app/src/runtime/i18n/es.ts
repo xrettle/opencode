@@ -216,7 +216,6 @@ export const dict = {
     "Elige si poner los seguimientos en cola u orientar el turno actual. Usa {{keybind}} para cambiar.",
   "settings.general.row.followUpBehavior.queue": "Poner en cola",
   "settings.general.row.followUpBehavior.steer": "Orientar",
-  "session.new.workspace.branch.search.placeholder": "Buscar ramas",
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "Archivo",
   "desktop.menu.edit": "Editar",
@@ -831,7 +830,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Servidor no disponible",
   "error.childStore.persistedCacheCreateFailed": "Error al crear caché persistente",
   "error.childStore.persistedProjectMetadataCreateFailed": "Error al crear metadatos de proyecto persistentes",
-  "error.childStore.persistedProjectIconCreateFailed": "Error al crear icono de proyecto persistente",
   "error.childStore.storeCreateFailed": "Error al crear almacén",
 
   "provider.disconnect.toast.noCredentials.description": "No se encontraron credenciales extraíbles para {{provider}}.",
@@ -865,7 +863,6 @@ export const dict = {
   "common.viewAll": "Ver todo",
   "session.new.workspace.local.tooltip": "Usar el checkout actual",
   "session.new.workspace.new.tooltip": "Crear un checkout aislado",
-  "session.new.workspace.fromBranch": "de {{branch}}",
   "session.new.workspace.trigger.tooltip": "Seleccione dónde ejecutar la sesión",
   "session.new.workspace.search.placeholder": "Buscar espacios de trabajo",
   "settings.tab.workspaces": "Espacios de trabajo",

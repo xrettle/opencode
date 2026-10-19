@@ -198,7 +198,6 @@ export const dict = {
     "Vælg, om opfølgninger skal sættes i kø eller styre den aktuelle tur. Brug {{keybind}} til at skifte.",
   "settings.general.row.followUpBehavior.queue": "Sæt i kø",
   "settings.general.row.followUpBehavior.steer": "Styr",
-  "session.new.workspace.branch.search.placeholder": "Søg efter grene",
   "command.category.suggested": "Foreslået",
   "command.category.view": "Vis",
   "command.category.project": "Projekt",
@@ -740,7 +739,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Server ikke tilgængelig",
   "error.childStore.persistedCacheCreateFailed": "Kunne ikke oprette vedvarende cache",
   "error.childStore.persistedProjectMetadataCreateFailed": "Kunne ikke oprette vedvarende projektmetadata",
-  "error.childStore.persistedProjectIconCreateFailed": "Kunne ikke oprette vedvarende projektikon",
   "error.childStore.storeCreateFailed": "Kunne ikke oprette lager",
 
   "desktop.menu.app": "OpenCode",
@@ -843,7 +841,6 @@ export const dict = {
   "common.viewAll": "Se alle",
   "session.new.workspace.local.tooltip": "Brug det aktuelle checkout",
   "session.new.workspace.new.tooltip": "Opret et isoleret checkout",
-  "session.new.workspace.fromBranch": "fra {{branch}}",
   "session.new.workspace.trigger.tooltip": "Vælg, hvor sessionen skal køres",
   "session.new.workspace.search.placeholder": "Søg i arbejdsområder",
   "settings.tab.workspaces": "Arbejdsrum",

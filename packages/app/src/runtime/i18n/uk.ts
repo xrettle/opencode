@@ -347,7 +347,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Сервер недоступний",
   "error.childStore.persistedCacheCreateFailed": "Не вдалося створити постійний кеш",
   "error.childStore.persistedProjectMetadataCreateFailed": "Не вдалося створити постійні метадані проєкту",
-  "error.childStore.persistedProjectIconCreateFailed": "Не вдалося створити постійну іконку проєкту",
   "error.childStore.storeCreateFailed": "Не вдалося створити сховище",
 
   "error.chain.unknown": "Невідома помилка",
@@ -673,7 +672,6 @@ export const dict = {
   "common.viewAll": "Переглянути всі",
   "session.new.workspace.local.tooltip": "Використати поточну робочу копію",
   "session.new.workspace.new.tooltip": "Створити ізольовану робочу копію",
-  "session.new.workspace.fromBranch": "від {{branch}}",
   "session.new.workspace.trigger.tooltip": "Виберіть, де запускати сеанс",
   "session.new.workspace.search.placeholder": "Пошук робочих областей",
   "settings.tab.workspaces": "Робочі області",
@@ -741,7 +739,6 @@ export const dict = {
     "Виберіть, чи ставити наступні повідомлення в чергу, чи спрямовувати ними поточний крок. Для перемикання використовуйте {{keybind}}.",
   "settings.general.row.followUpBehavior.queue": "Поставити в чергу",
   "settings.general.row.followUpBehavior.steer": "Спрямувати",
-  "session.new.workspace.branch.search.placeholder": "Пошук гілок",
   "desktop.onboarding.defaultProject": "Типовий проєкт",
   "toast.migration.progress.clearingOldEvents": "Очищення старих подій",
   "toast.migration.progress.migratingSessions": "Перенесення сесій",

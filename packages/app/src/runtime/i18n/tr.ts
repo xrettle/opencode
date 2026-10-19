@@ -624,7 +624,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Sunucu mevcut değil",
   "error.childStore.persistedCacheCreateFailed": "Kalıcı önbellek oluşturulamadı",
   "error.childStore.persistedProjectMetadataCreateFailed": "Kalıcı proje meta verileri oluşturulamadı",
-  "error.childStore.persistedProjectIconCreateFailed": "Kalıcı proje simgesi oluşturulamadı",
   "error.childStore.storeCreateFailed": "Depo oluşturulamadı",
 
   "provider.disconnect.toast.noCredentials.description": "{{provider}} için kaldırılabilir kimlik bilgisi bulunamadı.",
@@ -677,7 +676,6 @@ export const dict = {
   "common.viewAll": "Tümünü görüntüle",
   "session.new.workspace.local.tooltip": "Mevcut çalışma kopyasını kullan",
   "session.new.workspace.new.tooltip": "Yalıtılmış çalışma kopyası oluştur",
-  "session.new.workspace.fromBranch": "{{branch}} dalından",
   "session.new.workspace.trigger.tooltip": "Oturumun nerede çalıştırılacağını seçin",
   "session.new.workspace.search.placeholder": "Çalışma alanı ara",
   "settings.tab.workspaces": "Çalışma alanları",
@@ -725,7 +723,6 @@ export const dict = {
     "Takip iletilerinin sıraya alınmasını veya mevcut turu yönlendirmesini seçin. Geçiş yapmak için {{keybind}} tuşunu kullanın.",
   "settings.general.row.followUpBehavior.queue": "Sıraya al",
   "settings.general.row.followUpBehavior.steer": "Yönlendir",
-  "session.new.workspace.branch.search.placeholder": "Dal ara",
   "toast.migration.progress.clearingOldEvents": "Eski olaylar temizleniyor",
   "toast.migration.progress.migratingSessions": "Oturumlar taşınıyor",
   "session.new.workspace.existingLabel": "Çalışma ağacı",

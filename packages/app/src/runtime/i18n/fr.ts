@@ -218,7 +218,6 @@ export const dict = {
     "Choisissez de mettre les relances en attente ou d’orienter le tour en cours. Utilisez {{keybind}} pour changer.",
   "settings.general.row.followUpBehavior.queue": "Mettre en attente",
   "settings.general.row.followUpBehavior.steer": "Orienter",
-  "session.new.workspace.branch.search.placeholder": "Rechercher des branches",
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "Fichier",
   "desktop.menu.edit": "Édition",
@@ -782,7 +781,6 @@ export const dict = {
   "error.childStore.persistedCacheCreateFailed": "Échec de la création du cache persistant",
   "error.childStore.persistedProjectMetadataCreateFailed":
     "Échec de la création des métadonnées de projet persistantes",
-  "error.childStore.persistedProjectIconCreateFailed": "Échec de la création de l'icône de projet persistante",
   "error.childStore.storeCreateFailed": "Échec de la création du stockage",
 
   "provider.disconnect.toast.noCredentials.description":
@@ -817,7 +815,6 @@ export const dict = {
   "common.viewAll": "Voir tout",
   "session.new.workspace.local.tooltip": "Utiliser le checkout actuel",
   "session.new.workspace.new.tooltip": "Créer un checkout isolé",
-  "session.new.workspace.fromBranch": "de {{branch}}",
   "session.new.workspace.trigger.tooltip": "Sélectionnez où exécuter la session",
   "session.new.workspace.search.placeholder": "Rechercher des espaces de travail",
   "settings.tab.workspaces": "Espaces de travail",

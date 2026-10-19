@@ -294,8 +294,6 @@ export const dict = {
   "error.childStore.persistedCacheCreateFailed": "རྟག་བརྟན་འདྲ་མཛོད་གསར་བསྐྲུན་འབད་ནི་ལུ་འཐུས་ཤོར་འབྱུང་ཡོདཔ།",
   "error.childStore.persistedProjectMetadataCreateFailed":
     "ཡུན་བརྟན་ལས་འགུལ་མེ་ཊ་གནད་སྡུད་གསར་བསྐྲུན་འབད་ནི་ལུ་འཐུས་ཤོར་འབྱུང་ཡོདཔ།",
-  "error.childStore.persistedProjectIconCreateFailed":
-    "རྟག་བརྟན་ལས་འགུལ་གྱི་ངོས་དཔར་གསར་བསྐྲུན་འབད་ནི་ལུ་འཐུས་ཤོར་འབྱུང་ཡོདཔ།",
   "error.childStore.storeCreateFailed": "མཛོད་ཁང་གསར་བསྐྲུན་འབད་ནི་ལུ་འཐུས་ཤོར་འབྱུང་ཡོདཔ།",
   "error.chain.unknown": "མ་ཤེས་པའི་འཛོལ་བ།",
   "error.server.invalidConfiguration": "ནུས་མེད་རིམ་སྒྲིག།",
@@ -609,7 +607,6 @@ export const dict = {
   "common.viewAll": "ཆ་མཉམ་བལྟ།",
   "session.new.workspace.local.tooltip": "ད་ལྟོའི་ checkout ལག་ལེན་འཐབ།",
   "session.new.workspace.new.tooltip": "checkout སོ་སོ་ཅིག་གསར་བསྐྲུན་འབད།",
-  "session.new.workspace.fromBranch": "{{branch}} ལས།",
   "session.new.workspace.trigger.tooltip": "ལཱ་ཡུན་ག་ཏེ་གཡོག་བཀོལ་ནི་ཨིན་ན་སེལ་འཐུ་འབད།",
   "session.new.workspace.search.placeholder": "ལཱ་གི་ས་སྒོ་ཚུ་འཚོལ་ཞིབ་འབད།",
   "settings.tab.workspaces": "ལཱ་གི་ས་སྒོ་ཚུ།",
@@ -660,7 +657,6 @@ export const dict = {
     "འཕྲོ་མཐུད་འཕྲིན་དོན་ཚུ་བསྒུག་ཐོ་ནང་བཙུགས་ནི་ཡང་ན་ ད་ལྟོའི་ལཱ་ཐེངས་ཁ་སྒྱུར་ནི་གདམ་ཁ་རྐྱབས། སོར་ནི་ལུ་ {{keybind}} ལག་ལེན་འཐབ།",
   "settings.general.row.followUpBehavior.queue": "བསྒུག་ཐོ་ནང་བཙུགས།",
   "settings.general.row.followUpBehavior.steer": "ཁ་སྒྱུར།",
-  "session.new.workspace.branch.search.placeholder": "ཡན་ལག་ཚུ་འཚོལ།",
   "toast.migration.progress.clearingOldEvents": "ཧེ་མའི་བྱུང་ལས་ཚུ་བསལ་དོ།",
   "toast.migration.progress.migratingSessions": "ལཱ་ཡུན་ཚུ་གནས་སྤོ་འབད་དོ།",
   "session.new.workspace.existingLabel": "Git worktree",

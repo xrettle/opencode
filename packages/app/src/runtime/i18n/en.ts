@@ -453,7 +453,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Server not available",
   "error.childStore.persistedCacheCreateFailed": "Failed to create persisted cache",
   "error.childStore.persistedProjectMetadataCreateFailed": "Failed to create persisted project metadata",
-  "error.childStore.persistedProjectIconCreateFailed": "Failed to create persisted project icon",
   "error.childStore.storeCreateFailed": "Failed to create store",
 
   "error.chain.unknown": "Unknown error",
@@ -983,8 +982,6 @@ export const dict = {
   "common.viewAll": "View all",
   "session.new.workspace.local.tooltip": "Uses project’s current checkout",
   "session.new.workspace.new.tooltip": "Creates isolated copy from current checkout",
-  "session.new.workspace.fromBranch": "from {{branch}}",
-  "session.new.workspace.branch.search.placeholder": "Search branches",
   "session.new.workspace.trigger.tooltip": "Select where to run session",
   "session.new.workspace.search.placeholder": "Search worktrees",
   "session.new.workspace.search.empty": "No matching worktrees",

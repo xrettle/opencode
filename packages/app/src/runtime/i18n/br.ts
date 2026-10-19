@@ -215,7 +215,6 @@ export const dict = {
     "Escolha entre colocar mensagens de acompanhamento na fila ou orientar a interação atual. Use {{keybind}} para alternar.",
   "settings.general.row.followUpBehavior.queue": "Colocar na fila",
   "settings.general.row.followUpBehavior.steer": "Orientar",
-  "session.new.workspace.branch.search.placeholder": "Pesquisar branches",
   "desktop.menu.app": "OpenCode",
   "desktop.menu.file": "Arquivo",
   "desktop.menu.edit": "Editar",
@@ -776,7 +775,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Servidor indisponível",
   "error.childStore.persistedCacheCreateFailed": "Falha ao criar cache persistente",
   "error.childStore.persistedProjectMetadataCreateFailed": "Falha ao criar metadados de projeto persistentes",
-  "error.childStore.persistedProjectIconCreateFailed": "Falha ao criar ícone de projeto persistente",
   "error.childStore.storeCreateFailed": "Falha ao criar armazenamento",
 
   "provider.disconnect.toast.noCredentials.description": "Nenhuma credencial removível encontrada para {{provider}}.",
@@ -810,7 +808,6 @@ export const dict = {
   "common.viewAll": "Ver tudo",
   "session.new.workspace.local.tooltip": "Usar checkout atual",
   "session.new.workspace.new.tooltip": "Criar checkout isolado",
-  "session.new.workspace.fromBranch": "de {{branch}}",
   "session.new.workspace.trigger.tooltip": "Selecione onde executar a sessão",
   "session.new.workspace.search.placeholder": "Pesquisar espaços de trabalho",
   "settings.tab.workspaces": "Espaços de trabalho",

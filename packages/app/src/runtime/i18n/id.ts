@@ -331,7 +331,6 @@ export const dict = {
   "error.serverSDK.serverNotAvailable": "Server tidak tersedia",
   "error.childStore.persistedCacheCreateFailed": "Gagal membuat tembolok persisten",
   "error.childStore.persistedProjectMetadataCreateFailed": "Gagal membuat metadata proyek persisten",
-  "error.childStore.persistedProjectIconCreateFailed": "Gagal membuat ikon proyek persisten",
   "error.childStore.storeCreateFailed": "Gagal membuat penyimpanan",
 
   "error.chain.unknown": "Kesalahan tidak diketahui",
@@ -646,7 +645,6 @@ export const dict = {
   "common.viewAll": "Lihat semua",
   "session.new.workspace.local.tooltip": "Gunakan checkout saat ini",
   "session.new.workspace.new.tooltip": "Buat checkout terisolasi",
-  "session.new.workspace.fromBranch": "dari {{branch}}",
   "session.new.workspace.trigger.tooltip": "Pilih tempat menjalankan sesi",
   "session.new.workspace.search.placeholder": "Cari ruang kerja",
   "settings.tab.workspaces": "Ruang kerja",
@@ -720,7 +718,6 @@ export const dict = {
     "Pilih untuk mengantrekan tindak lanjut atau mengarahkan giliran saat ini. Gunakan {{keybind}} untuk beralih.",
   "settings.general.row.followUpBehavior.queue": "Antrekan",
   "settings.general.row.followUpBehavior.steer": "Arahkan",
-  "session.new.workspace.branch.search.placeholder": "Cari cabang",
   "toast.migration.progress.clearingOldEvents": "Menghapus event lama",
   "toast.migration.progress.migratingSessions": "Memigrasikan sesi",
   "session.new.workspace.existingLabel": "Worktree",

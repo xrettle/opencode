@@ -288,7 +288,6 @@ export const dict = {
   "error.childStore.persistedCacheCreateFailed": "ޕަރސިސްޓެޑް ކެޝް އުފެއްދުމަށް ނާކާމިޔާބުވިއެވެ",
   "error.childStore.persistedProjectMetadataCreateFailed":
     "ޕަރސިސްޓެޑް ޕްރޮޖެކްޓް މެޓަޑޭޓާ އުފެއްދުމަށް ނާކާމިޔާބުވިއެވެ",
-  "error.childStore.persistedProjectIconCreateFailed": "ޕަރސިސްޓެޑް ޕްރޮޖެކްޓް އައިކޮން އުފެއްދުމަށް ނާކާމިޔާބުވިއެވެ",
   "error.childStore.storeCreateFailed": "ސްޓޯރ އުފެއްދުމަށް ނާކާމިޔާބުވިއެވެ",
   "error.chain.unknown": "ނޭނގޭ ގޯހެއް",
   "error.server.invalidConfiguration": "ސައްހަ ނޫން ކޮންފިގްރޭޝަން",
@@ -597,7 +596,6 @@ export const dict = {
   "common.viewAll": "ހުރިހާ އެއްޗެއް ބަލާށެވެ",
   "session.new.workspace.local.tooltip": "މިހާރުގެ ޗެކްއައުޓް ބޭނުންކުރާށެވެ",
   "session.new.workspace.new.tooltip": "ވަކި ޗެކްއައުޓެއް އުފައްދާށެވެ",
-  "session.new.workspace.fromBranch": "\u2068{{branch}}\u2069 އިން",
   "session.new.workspace.trigger.tooltip": "ސެޝަން ހިންގާނެ ތަން ހޮވާށެވެ",
   "session.new.workspace.search.placeholder": "ވޯކްސްޕޭސްތައް ހޯދާށެވެ",
   "settings.tab.workspaces": "ވޯކްސްޕޭސްތައް",
@@ -664,7 +662,6 @@ export const dict = {
     "ފޮލޯއަޕް ކިއޫކުރާނެތޯ ނުވަތަ މިހާރުގެ ޓަރން މަގުދައްކާނެތޯ ހޮވާށެވެ. ބަދަލުކުރުމަށް \u2068{{keybind}}\u2069 ބޭނުންކުރާށެވެ.",
   "settings.general.row.followUpBehavior.queue": "ކިއޫކުރާށެވެ",
   "settings.general.row.followUpBehavior.steer": "މަގުދައްކާށެވެ",
-  "session.new.workspace.branch.search.placeholder": "ބްރާންޗް ހޯދާށެވެ",
   "toast.migration.progress.clearingOldEvents": "ކުރީގެ ހާދިސާތައް ސާފުކުރަމުން",
   "toast.migration.progress.migratingSessions": "ސެޝަންތައް މައިގްރޭޓްކުރަމުން",
   "session.new.workspace.existingLabel": "ވޯކްޓްރީ",
