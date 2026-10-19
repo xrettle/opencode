@@ -33,8 +33,12 @@ describe("new session project selection", () => {
   })
 
   test("does not select a matching project ID from another server", () => {
-    const remote = { id: "shared", worktree: "/remote", server: { key: "remote", name: "Remote" } }
-    const local = { id: "shared", worktree: "/local", server: { key: "local", name: "Local" } }
+    const remote = {
+      id: "shared",
+      worktree: "/remote",
+      server: { key: "remote", name: "Remote", kind: "remote" as const },
+    }
+    const local = { id: "shared", worktree: "/local", server: { key: "local", name: "Local", kind: "local" as const } }
 
     const controls: PromptProjectControls = {
       available: [remote, local],
@@ -48,6 +52,45 @@ describe("new session project selection", () => {
     createRoot((dispose) => {
       const controller = createPromptProjectController({ controls: () => controls })
       expect(controller.selected()).toEqual(local)
+      dispose()
+    })
+  })
+
+  test("lists every server's projects in one list: used first, then the rest, each by recent activity", () => {
+    const local = { key: "local", name: "Local Server", kind: "local" as const }
+    const apollo = { key: "http://apollo:4096", name: "apollo", kind: "remote" as const }
+    const entry = (id: string, server: typeof local | typeof apollo, active: number, used: boolean) => ({
+      id,
+      worktree: `/${id}`,
+      server,
+      used,
+      time: { active },
+    })
+
+    // The same directory on two servers stays two rows.
+    const controls: PromptProjectControls = {
+      available: [
+        entry("local-unused", local, 9, false),
+        entry("local-used", local, 2, true),
+        entry("opencode", local, 1, true),
+        entry("apollo-unused", apollo, 5, false),
+        entry("opencode", apollo, 3, true),
+      ],
+      directory: "/elsewhere",
+      server: "local",
+      select() {},
+      add() {},
+    }
+
+    createRoot((dispose) => {
+      const controller = createPromptProjectController({ controls: () => controls })
+      expect(controller.projects().map((project) => `${project.server?.name}:${project.id}`)).toEqual([
+        "apollo:opencode",
+        "Local Server:local-used",
+        "Local Server:opencode",
+        "Local Server:local-unused",
+        "apollo:apollo-unused",
+      ])
       dispose()
     })
   })

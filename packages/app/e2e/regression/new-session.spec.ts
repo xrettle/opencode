@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test"
 import type { OpenCodeEvent, WorktreeDirectory } from "@opencode/client/promise"
-import { draftHref, expectPath, provider, sessionHref } from "../utils/app"
-import type { MockAnswer } from "../utils/mock-server"
+import { draftHref, expectPath, NO_PROVIDER, project, provider, seed, sessionHref, T0 } from "../utils/app"
+import { mockOpenCodeServer, type MockAnswer } from "../utils/mock-server"
 import { newSessionLocation, openDraft, openSession, openWorktreeDraft, type WorkspaceInput } from "../utils/workspace"
 
 const directory = "C:/OpenCode/WorkspacePending"
@@ -404,6 +404,90 @@ test("executes a selected slash command after creating its worktree", async ({ p
   await expect(submit(page)).toBeEnabled()
   expect(mock.creates).toEqual([expect.objectContaining({ id: pending.sessionID, location: { directory: workspace } })])
   expect(mock.prompts).toEqual([])
+})
+
+test("the location dialog lists every ready server's projects in one list and tags the remote ones", async ({
+  page,
+}) => {
+  const apollo = "http://apollo.test:4096"
+  const entry = (id: string, directory: string, active: number) =>
+    project({ id, directory, time: { created: T0, updated: T0, active: T0 + active } })
+  const remote = entry("proj_apollo_opencode", "/home/dax/opencode", 4)
+  const files: string[] = []
+  page.on("request", (request) => {
+    const url = new URL(request.url())
+
+    if (url.origin === apollo && url.pathname === "/api/fs/list") files.push(url.pathname)
+  })
+  await mockOpenCodeServer(page, {
+    server: apollo,
+    directory: remote.worktree,
+    project: remote,
+    projects: () => [remote, entry("proj_apollo_sst", "/home/dax/sst", 3)],
+    worktrees: () => [{ directory: remote.worktree }, { directory: "/home/dax/opencode-beta", strategy: "git" }],
+    provider: NO_PROVIDER,
+    sessions: [],
+    pageMessages: () => ({ items: [] }),
+    fileList: () => [],
+  })
+  // hailmary is listed but unreachable, so it contributes no projects and cannot take a new one.
+  await seed(page, {
+    servers: [
+      { url: apollo, name: "apollo" },
+      { url: "http://127.0.0.1:4999", name: "hailmary" },
+    ],
+    usedProjects: { [apollo]: [remote.id] },
+  })
+  const local = entry("proj_opencode", "C:/work/opencode", 2)
+  await openDraft(page, {
+    name: "opencode",
+    directory: local.worktree,
+    project: { time: local.time },
+    projects: () => [local, entry("proj_console", "C:/work/console", 9)],
+  })
+
+  await newSessionLocation(page).click()
+  const dialog = page.getByRole("dialog")
+  const search = dialog.getByRole("textbox")
+  await expect(search).toBeFocused()
+  const options = dialog.getByRole("option")
+  const names = options.locator(".new-session-location-name")
+  const paths = options.locator(".command-palette-description")
+  const chip = dialog.getByRole("button", { name: "Back to projects", exact: true })
+  // Used projects first, then the rest, each by recent activity across servers; only remote ones carry a tag.
+  await expect(names).toHaveText(["opencodeapollo", "opencode", "console", "sstapollo"])
+  await expect(paths).toHaveText(["/home/dax/opencode", "C:/work/opencode", "C:/work/console", "/home/dax/sst"])
+  await expect(options.last()).toHaveText("Add project")
+  // It opens on the first row, not on the draft's current project (the second row).
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+
+  await search.fill("apollo")
+  await expect(names).toHaveText(["opencodeapollo", "sstapollo"])
+
+  // The worktree step keeps the server's tag beside the project.
+  await search.fill("opencode")
+  await expect(paths).toHaveText(["/home/dax/opencode", "C:/work/opencode"])
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ArrowRight")
+  await expect(chip).toContainText("opencode")
+  await expect(chip.locator('[data-component="tag"]')).toHaveText("apollo")
+  await expect(options.locator(".command-palette-title")).toHaveText(["opencode", "opencode-beta", "New worktree"])
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("Backspace")
+  await expect(search).toHaveValue("opencode")
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+
+  // Adding a project picks one of the ready servers first, then browses that server.
+  await search.fill("")
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ArrowUp")
+  await expect(options.nth(4)).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ArrowRight")
+  await expect(chip).toHaveText("Add project")
+  await expect(options).toHaveText([/^127\.0\.0\.1:\d+$/, "apollo"])
+  await options.filter({ hasText: "apollo" }).click()
+  await expect(page.getByRole("button", { name: "Select folder", exact: true })).toBeEnabled()
+  await expect.poll(() => files.length).toBeGreaterThan(0)
 })
 
 const accentRoot = "C:/OpenCode/WorkspaceAccent"

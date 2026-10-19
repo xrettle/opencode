@@ -1030,6 +1030,8 @@ export const dict = {
   "session.new.location.select": "Select",
   "session.new.location.worktrees": "Worktrees",
   "session.new.location.back": "Back to projects",
+  "session.new.location.servers": "Servers",
+  "session.new.location.servers.search": "Search servers",
   "settings.tab.workspaces": "Worktrees",
   "settings.workspaces.description": "Review worktrees and manage disk usage",
   "settings.workspaces.filter.all": "All projects",

@@ -218,6 +218,7 @@
     gap: 1px;
   }
 
+  .command-palette-title,
   .command-palette-description {
     max-width: 100%;
   }
