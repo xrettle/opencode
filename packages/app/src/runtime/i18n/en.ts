@@ -42,6 +42,7 @@ export const dict = {
   "command.palette": "Command palette",
 
   "command.session.new": "New session",
+  "command.session.search": "Search sessions",
   "command.session.previous": "Previous session",
   "command.session.next": "Next session",
   "command.session.previous.unseen": "Previous unread session",
@@ -93,6 +94,7 @@ export const dict = {
   "palette.group.commands": "Commands",
   "palette.group.files": "Files",
   "palette.group.recentSessions": "Recent sessions",
+  "palette.session.location": "{{project}} · {{server}}",
 
   "dialog.provider.search.placeholder": "Search providers",
   "dialog.provider.empty": "No providers found",

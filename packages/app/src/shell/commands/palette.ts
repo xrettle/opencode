@@ -229,6 +229,7 @@ export function createServerSessionEntries(props: {
   untitled: () => string
   category: () => string
   recentCategory: () => string
+  recentLimit?: number
 }) {
   let abort: AbortController | undefined
 
@@ -294,6 +295,6 @@ export function createServerSessionEntries(props: {
       ),
     )
 
-    return search ? entries : entries.slice(0, ENTRY_LIMIT)
+    return search ? entries : entries.slice(0, props.recentLimit ?? ENTRY_LIMIT)
   }
 }

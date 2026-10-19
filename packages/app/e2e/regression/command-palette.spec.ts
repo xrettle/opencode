@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test"
-import { captureConsoleWarnings, openCommandPalette, paletteSession } from "../utils/command-palette"
+import {
+  captureConsoleWarnings,
+  openCommandPalette,
+  openPaletteWorkspace,
+  paletteSession,
+} from "../utils/command-palette"
 
 test.use({ serviceWorkers: "block", permissions: ["clipboard-read", "clipboard-write"] })
 
@@ -44,6 +49,25 @@ test("lists recent sessions before a query is entered", async ({ page }) => {
   await expect(dialog.getByText("Recent sessions", { exact: true })).toBeVisible()
   await expect(session).toHaveAttribute("aria-selected", "false")
   await session.click()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByRole("heading", { name: paletteSession.title, exact: true })).toBeVisible()
+})
+
+test("titlebar search lists recent sessions and opens the typed match", async ({ page }) => {
+  await openPaletteWorkspace(page, true)
+  await page.getByRole("banner").getByRole("button", { name: "Search sessions", exact: true }).click()
+  const dialog = page.getByRole("dialog")
+  const input = dialog.getByRole("textbox")
+  await expect(input).toBeFocused()
+  await expect(input).toHaveAttribute("placeholder", "Search sessions")
+  await expect(dialog.getByText("Recent sessions", { exact: true })).toBeVisible()
+  await expect(dialog.getByRole("option", { name: /Palette fixture session/ })).toHaveAttribute("aria-selected", "true")
+  // Session search lists sessions only, never commands.
+  await input.fill("settings")
+  await expect(dialog.getByText("No results found", { exact: true })).toBeVisible()
+  await input.fill("Palette fixture")
+  await expect(dialog.getByRole("option")).toHaveCount(1)
+  await input.press("Enter")
   await expect(dialog).toHaveCount(0)
   await expect(page.getByRole("heading", { name: paletteSession.title, exact: true })).toBeVisible()
 })
@@ -138,7 +162,14 @@ test("keeps a keyboard-selected file when session results arrive later", async (
   const { dialog, input } = await openCommandPalette(page)
   const sessions = Promise.withResolvers<void>()
   await page.route("**/api/fs/find?*", (route) =>
-    route.fulfill({ json: { data: [{ path: "README.txt", type: "file" }, { path: "README.md", type: "file" }] } }),
+    route.fulfill({
+      json: {
+        data: [
+          { path: "README.txt", type: "file" },
+          { path: "README.md", type: "file" },
+        ],
+      },
+    }),
   )
   await page.route("**/api/session?*", async (route) => {
     await sessions.promise

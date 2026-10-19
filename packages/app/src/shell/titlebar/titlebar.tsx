@@ -2,6 +2,7 @@ import { createEffect, createMemo, createResource, Match, Show, Switch, untrack 
 import { createStore, unwrap } from "solid-js/store"
 import { Dynamic, Portal } from "solid-js/web"
 import { useLocation, useNavigate } from "@solidjs/router"
+import { useDialog } from "@opencode/ui/context/dialog"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Icon } from "@opencode/ui/icon"
 import { Keybind } from "@opencode/ui/keybind"
@@ -62,6 +63,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
   const language = useLanguage()
   const settings = useSettings()
   const openSettings = useSettingsDialog()
+  const dialog = useDialog()
   const navigate = useNavigate()
   const location = useLocation()
   const mobile = createMediaQuery("(max-width: 767px)")
@@ -448,6 +450,51 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
               </Show>
             )
 
+            const searchButton = (vertical = false) => (
+              <Show
+                when={vertical}
+                fallback={
+                  <Tooltip
+                    placement="bottom"
+                    value={
+                      <>
+                        {language.t("command.session.search")}
+                        <Keybind keys={command.keybindParts("session.search")} variant="neutral" />
+                      </>
+                    }
+                    class="shrink-0"
+                  >
+                    <IconButton
+                      type="button"
+                      variant="ghost-muted"
+                      size="large"
+                      class="!w-9 shrink-0"
+                      icon={<Icon name="magnifying-glass" />}
+                      onClick={() => command.trigger("session.search")}
+                      aria-label={language.t("command.session.search")}
+                    />
+                  </Tooltip>
+                }
+              >
+                <button
+                  type="button"
+                  data-titlebar-tab-action
+                  data-action="vertical-tabs-search"
+                  class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[13px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base"
+                  onClick={() => command.trigger("session.search")}
+                >
+                  <Icon name="magnifying-glass" class="shrink-0" />
+                  <span class="min-w-0 truncate">{language.t("command.session.search")}</span>
+                  <span
+                    class="ms-auto hidden min-w-0 truncate text-v2-text-text-faint group-hover:block group-focus-visible:block"
+                    aria-hidden="true"
+                  >
+                    <bdi dir="ltr">{command.keybind("session.search")}</bdi>
+                  </span>
+                </button>
+              </Show>
+            )
+
             command.register("titlebar-home", () => [
               {
                 id: "home.toggle",
@@ -458,6 +505,15 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 onSelect: () => {
                   if (layout.route().type !== "home") layout.home.searchFocus.request()
                   toggleHome()
+                },
+              },
+              {
+                id: "session.search",
+                title: language.t("command.session.search"),
+                category: language.t("command.category.session"),
+                onSelect: async () => {
+                  const { DialogSessionSearch } = await import("@/shell/commands/session-search")
+                  void dialog.show(() => <DialogSessionSearch />)
                 },
               },
             ])
@@ -546,7 +602,10 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 <Show when={windows() && props.verticalTabs}>
                   <SidebarToggle />
                 </Show>
-                <Show when={!mobile() && !props.verticalTabs}>{homeButton()}</Show>
+                <Show when={!mobile() && !props.verticalTabs}>
+                  {homeButton()}
+                  {searchButton()}
+                </Show>
 
                 <Show
                   when={!mobile()}
@@ -760,6 +819,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                               </div>
                             </Show>
                             <Show when={!homeInSidebarHeader()}>{homeButton(true)}</Show>
+                            {searchButton(true)}
                             <RecentlyClosedTabsMenu
                               vertical
                               onNewTab={openNewTab}
