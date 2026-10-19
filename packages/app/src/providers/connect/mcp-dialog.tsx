@@ -99,7 +99,7 @@ export const DialogSelectMcp: Component = () => {
       )
   }
 
-  // A toggle changes the server's status, which makes the list reset its highlight; keep the keyboard user's place.
+  // A toggle changes the server's status, which makes the list reset its highlight to the first row; keep the user's place.
   let kept = ""
 
   const list = useFilteredList({
@@ -112,7 +112,6 @@ export const DialogSelectMcp: Component = () => {
       kept = x.name
       select(x.name)
     },
-    noInitialSelection: true,
   })
 
   createEffect(
@@ -208,10 +207,13 @@ export const DialogSelectMcp: Component = () => {
                             data-active={list.active() === item.name ? "" : undefined}
                             class="search-list-row"
                             onMouseMove={() => {
-                              kept = ""
+                              kept = item.name
                               list.setActive(item.name)
                             }}
-                            onMouseLeave={() => list.setActive("")}
+                            onMouseLeave={() => {
+                              kept = ""
+                              list.setActive("")
+                            }}
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => select(item.name)}
                           >

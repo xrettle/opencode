@@ -97,36 +97,50 @@ const ModelList: Component<{
     collapsed: Record<string, boolean>
   }>({
     search: "",
-    active: props.mobile ? (controller.current() ?? "") : "",
+    active: "",
     collapsed: {},
   })
 
-  createEffect(
-    on(
-      () => props.open,
-      (open) => {
-        if (!props.mobile || !open) return
-        setStore({ search: "", active: controller.current() ?? "" })
-      },
-    ),
-  )
   const models = createMemo(() => controller.models(store.search))
   const modelGroups = createMemo(() => controller.groups(models()))
   const managed = createMemo(() => consoleModelGroup(controller.all()))
   const expanded = (provider: string) => store.search.length > 0 || !store.collapsed[provider]
   const managedIDs = createMemo(() => new Set(managed()?.providers.map((provider) => provider.id) ?? []))
 
-  const visibleModels = () =>
-    models().filter(
-      (item) => expanded(item.provider.id) && (!managedIDs().has(item.provider.id) || expanded(CONSOLE_GROUP_KEY)),
-    )
+  // Rows in display order: ProviderModelSections nests every managed provider at the first one's position.
+  const visibleModels = () => {
+    const groups = modelGroups()
+    const first = groups.findIndex((group) => managedIDs().has(group.category))
+
+    return groups.flatMap((group, index) => {
+      if (!managedIDs().has(group.category)) return expanded(group.category) ? group.items : []
+
+      if (index !== first || !expanded(CONSOLE_GROUP_KEY)) return []
+
+      return groups
+        .filter((item) => managedIDs().has(item.category) && expanded(item.category))
+        .flatMap((item) => item.items)
+    })
+  }
 
   let scrollRef: HTMLDivElement | undefined
 
   const setSearch = (value: string) => {
-    const first = controller.models(value).find((item) => value.length > 0 || !store.collapsed[item.provider.id])
-    setStore({ search: value, active: first ? modelKey(first) : "" })
+    setStore("search", value)
+    const first = visibleModels()[0]
+    setStore("active", first ? modelKey(first) : "")
   }
+
+  createEffect(
+    on(
+      () => props.open,
+      (open) => {
+        if (!open) return
+        setSearch("")
+        scrollRef?.scrollTo(0, 0)
+      },
+    ),
+  )
 
   const moveActive = (delta: number) => {
     const keys = visibleModels().map(modelKey)
@@ -613,7 +627,7 @@ export function DialogSelectModel(props: { provider?: string; model?: ModelState
 
   const [store, setStore] = createStore({
     search: "",
-    active: controller.current() ?? "",
+    active: "",
     flyout: "",
     keyboard: true,
     navigated: false,
@@ -653,7 +667,7 @@ export function DialogSelectModel(props: { provider?: string; model?: ModelState
   const flyoutItem = () => (store.flyout ? rowItem(store.flyout) : undefined)
   const variantsOf = (item: ModelItem) => Object.keys(item.variants ?? {})
 
-  setStore("active", rows().find((row) => modelKey(row.item) === controller.current())?.id ?? "")
+  setStore("active", rows()[0]?.id ?? "")
 
   const variant = (item: ModelItem) =>
     modelKey(item) in staged ? (staged[modelKey(item)] ?? undefined) : controller.variant(item)
@@ -674,8 +688,8 @@ export function DialogSelectModel(props: { provider?: string; model?: ModelState
   }
 
   const setSearch = (value: string) => {
-    const first = controller.models(value)[0]
-    setStore({ search: value, active: first ? modelKey(first) : "", flyout: "", keyboard: true, navigated: false })
+    setStore({ search: value, flyout: "", keyboard: true, navigated: false })
+    setStore("active", rows()[0]?.id ?? "")
   }
 
   const triangle = createSafeTriangle({

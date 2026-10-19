@@ -117,6 +117,12 @@ for (const surface of ["popover", "dialog"] as const) {
       await view.panel.getByText("figma-desktop", { exact: true }).click()
     }
 
+    // The dialog opens with its search focused and the first server highlighted.
+    if (surface === "dialog") {
+      await expect(view.panel.getByRole("searchbox", { name: "Search", exact: true })).toBeFocused()
+      await expect(view.panel.getByRole("option")).toHaveAttribute("aria-selected", "true")
+    }
+
     await reset()
     await expect(view.toggle).not.toBeChecked()
     await expect(view.toggle).toBeEnabled()
