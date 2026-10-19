@@ -116,6 +116,7 @@ describe("settings schema", () => {
         permissions: "staplebops-02",
         errorsEnabled: true,
         errors: "nope-03",
+        interfaceEnabled: true,
       },
     })
   })
