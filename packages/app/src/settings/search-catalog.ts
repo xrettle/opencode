@@ -170,7 +170,8 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
 ]
 
-export const serverSettings: Entry<SettingsServerTab>[] = [
+// Pages showing the selected server, and rows of its card on the Servers page.
+export const serverSettings: Entry<SettingsServerTab | "servers">[] = [
   { tab: "projects", label: "settings.tab.projects" },
   { tab: "workspaces", label: "settings.tab.workspaces", keywords: "workspaces disk usage cleanup delete" },
   { tab: "providers", label: "settings.providers.title", keywords: "connect api key credentials" },
@@ -185,14 +186,14 @@ export const serverSettings: Entry<SettingsServerTab>[] = [
   { tab: "extensions", subtab: "plugins", label: "settings.extensions.tab.plugins" },
   { tab: "extensions", subtab: "skills", label: "settings.extensions.tab.skills" },
   {
-    tab: "general",
+    tab: "servers",
     label: "settings.general.row.shell.title",
     target: "settings-shell",
     description: "settings.general.row.shell.description",
     keywords: "bash zsh powershell",
   },
   {
-    tab: "general",
+    tab: "servers",
     label: "settings.server.preferences.websearch.title",
     target: "settings-websearch",
     description: "settings.server.preferences.websearch.description",

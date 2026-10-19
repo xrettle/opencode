@@ -2,7 +2,7 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { ServerConnection } from "@/runtime/server/registry"
 import { authTokenFromCredentials } from "./api"
 import { ClientError, isUnauthorizedError, OpenCode } from "@opencode/client"
-import { Accessor, createEffect, onCleanup } from "solid-js"
+import { Accessor, createEffect, createSignal, onCleanup } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 
 export type ServerHealth = {
@@ -174,12 +174,18 @@ export function createServerHealth(
   check: (http: ServerConnection.HttpBase) => Promise<ServerHealth>,
 ) {
   const [status, setStatus] = createStore({} as Record<ServerConnection.Key, ServerHealth | undefined>)
+  const [attempt, setAttempt] = createSignal(0)
   const endpoints = new Map<ServerConnection.Key, string>()
+  // Callers of `retry` wait for the probe round it starts.
+  const waiting: (() => void)[] = []
 
   createEffect(() => {
+    attempt()
+
     if (!enabled()) {
       endpoints.clear()
       setStatus(reconcile({}))
+      waiting.splice(0).forEach((resolve) => resolve())
 
       return
     }
@@ -250,7 +256,9 @@ export function createServerHealth(
       setStatus(reconcile(results))
     }
 
-    void refresh()
+    void refresh().finally(() => {
+      if (!dead) waiting.splice(0).forEach((resolve) => resolve())
+    })
     const id = setInterval(() => void refresh(), pollMs)
     onCleanup(() => {
       dead = true
@@ -258,5 +266,13 @@ export function createServerHealth(
     })
   })
 
-  return status
+  return {
+    status,
+    /** Probes every server now instead of at the next poll; resolves when that round finishes. */
+    retry: () =>
+      new Promise<void>((resolve) => {
+        waiting.push(resolve)
+        setAttempt((value) => value + 1)
+      }),
+  }
 }

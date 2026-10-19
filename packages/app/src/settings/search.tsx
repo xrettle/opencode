@@ -74,11 +74,10 @@ export function SettingsSearch() {
     }),
   )
 
-  const origin = () => search.state.origin ?? surface.view()
-
   const catalog = createMemo(() =>
     settingsSearchIndex({
       servers: inventory(),
+      selected: surface.server()?.key,
       desktop: platform.platform === "desktop",
       browser: platform.platform === "desktop",
       mobile: mobile(),
@@ -87,7 +86,7 @@ export function SettingsSearch() {
     }),
   )
 
-  const matches = createMemo(() => rankSettings(search.state.query, catalog(), origin()))
+  const matches = createMemo(() => rankSettings(search.state.query, catalog()))
 
   const category = (item: SettingsSearchResult) =>
     item.topLevel

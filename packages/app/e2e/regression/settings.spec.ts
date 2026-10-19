@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 import type { ConfigEntry, OpenCodeEvent, WorktreeDirectory } from "@opencode/client/promise"
-import { NO_PROVIDER, REMOTE_SERVER, SERVER, holdRoute, project, session } from "../utils/app"
+import { NO_PROVIDER, REMOTE_SERVER, SERVER, holdRoute, project, seed, session } from "../utils/app"
 import { mockMissingLocation, mockOpenCodeServer } from "../utils/mock-server"
 import { mockRemoteServer, mockWorkspace, openSession, openSettings, type WorkspaceInput } from "../utils/workspace"
 
@@ -132,6 +132,50 @@ test("single-server settings expose scoped pages without a server picker", async
 
   await page.getByRole("option", { name: "bash", exact: true }).click()
   expect((await updated).postDataJSON()).toEqual({ shell: "bash" })
+})
+
+test("several servers share one selected server across per-server pages", async ({ page }) => {
+  const offline = "http://127.0.0.1:4099"
+  await mockRemoteServer(page, {
+    name: "Build server",
+    directory: "/remote/settings-demo",
+    provider: {
+      all: [{ id: "openrouter", name: "OpenRouter", models: { kimi: { id: "kimi", name: "Kimi K2.5" } } }],
+      connected: ["openrouter"],
+      default: { providerID: "openrouter", modelID: "kimi" },
+    },
+    integrations: [{ id: "openrouter", name: "OpenRouter", methods: [{ type: "key" }], connections: [] }],
+  })
+  // Nothing answers on the offline server.
+  await seed(page, {
+    servers: [
+      { url: REMOTE_SERVER, name: "Build server" },
+      { url: offline, name: "Offline box" },
+    ],
+  })
+  const { settings } = await open(page)
+  const switcher = settings.locator('[data-action="settings-server-select"]:visible')
+  const connected = settings.locator('[data-component="connected-providers-section"]')
+
+  await settings.getByRole("tab", { name: "Providers", exact: true }).click()
+  await expect(switcher).toHaveText("Server127.0.0.1:4096")
+  await expect(connected.getByText("No connected providers")).toBeVisible()
+  await switcher.click()
+  await page.getByRole("menuitemradio", { name: "Build server", exact: true }).click()
+  await expect(connected.getByText("OpenRouter", { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("server") === REMOTE_SERVER && url.searchParams.get("tab") === "providers",
+  )
+
+  await settings.getByRole("tab", { name: "Models", exact: true }).click()
+  await expect(switcher).toHaveText("ServerBuild server")
+  await expect(settings.getByRole("switch", { name: "Kimi K2.5", exact: true })).toBeVisible()
+
+  await switcher.click()
+  await page.getByRole("menuitemradio", { name: /^Offline box/ }).click()
+  await expect(settings.getByRole("status").filter({ hasText: "Can't reach Offline box" })).toBeVisible()
+  await expect(settings.getByRole("button", { name: "Retry", exact: true })).toBeVisible()
+  await expect(settings.getByRole("button", { name: "Edit server", exact: true })).toBeVisible()
 })
 
 test("project list menus rename, edit, add, and stay inside the scrollport", async ({ page }) => {
@@ -1280,7 +1324,7 @@ test("the add server dialog keeps focus above fullscreen settings", async ({ pag
   await mockRemoteServer(page, { directory: "/remote/settings-demo" })
   const { settings } = await open(page)
   await expect(page.getByRole("dialog")).toHaveCount(0)
-  await settings.locator('[data-component="settings-nav-group-header"]').filter({ hasText: "Servers" }).hover()
+  await settings.getByRole("tab", { name: "Servers", exact: true }).click()
   await settings.getByRole("button", { name: "Add server" }).click()
 
   const editor = page.getByRole("dialog", { name: "Add server" })
@@ -1315,7 +1359,7 @@ test("the add server dialog pairs from a one-time link and explains a spent one"
   const link = `${paired}/auth/connect/one-time-code`
 
   const addServer = async () => {
-    await settings.locator('[data-component="settings-nav-group-header"]').filter({ hasText: "Servers" }).hover()
+    await settings.getByRole("tab", { name: "Servers", exact: true }).click()
     await settings.getByRole("button", { name: "Add server" }).click()
     const editor = page.getByRole("dialog", { name: "Add server" })
     await editor.getByLabel("Pairing link", { exact: true }).fill(link)
@@ -1327,7 +1371,6 @@ test("the add server dialog pairs from a one-time link and explains a spent one"
   const added = await addServer()
   await expect(added).toBeHidden()
   await expect(settings.getByText(paired, { exact: true })).toBeVisible()
-  await settings.getByRole("button", { name: "Back to settings" }).click()
 
   const spent = await addServer()
   await expect(spent.getByRole("alert")).toHaveText(
@@ -1359,7 +1402,7 @@ test("a pairing code with several addresses keeps the first one that works with 
   }
 
   const { settings } = await open(page)
-  await settings.locator('[data-component="settings-nav-group-header"]').filter({ hasText: "Servers" }).hover()
+  await settings.getByRole("tab", { name: "Servers", exact: true }).click()
   await settings.getByRole("button", { name: "Add server" }).click()
   const editor = page.getByRole("dialog", { name: "Add server" })
   await editor

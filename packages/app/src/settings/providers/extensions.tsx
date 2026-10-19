@@ -1,4 +1,4 @@
-import { Component, For, createEffect, createMemo, createResource } from "solid-js"
+import { Component, For, createEffect, createMemo, createResource, type JSX } from "solid-js"
 import { Icon } from "@opencode/ui/icon"
 import { Switch } from "@opencode/ui/switch"
 import { Tabs } from "@opencode/ui/tabs"
@@ -24,6 +24,7 @@ interface PluginRowItem {
 export const SettingsExtensions: Component<{
   subtab?: SettingsView["subtab"]
   onSubtab: (value: SettingsView["subtab"]) => void
+  headerAction?: JSX.Element
 }> = (props) => {
   const language = useLanguage()
   const serverSdk = useServerSDK()
@@ -76,10 +77,11 @@ export const SettingsExtensions: Component<{
     <>
       <div class="settings-tab-header">
         <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
+          <div class="flex min-w-0 flex-col gap-1">
             <h2 class="settings-tab-title">{language.t("settings.tab.extensions")}</h2>
             <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.extensions.description")}</span>
           </div>
+          <div class="settings-tab-header-actions">{props.headerAction}</div>
         </div>
       </div>
 

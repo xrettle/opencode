@@ -1,6 +1,7 @@
 import { createMemo } from "solid-js"
 import { ServerConnection, serverName, useServers } from "@/runtime/server/registry"
 import { useExtensionServers, type ExtensionServer } from "@/runtime/extension/servers"
+import type { ServerHealth } from "@/runtime/server/health"
 
 export type SettingsServer = {
   key: ServerConnection.Key
@@ -51,4 +52,9 @@ export function useSettingsServers() {
   const extensions = useExtensionServers()
 
   return createMemo(() => settingsServers(servers.list, extensions.entries()))
+}
+
+/** Whether a server's pages can load: it runs and its last health check did not fail. */
+export function settingsServerReachable(server: SettingsServer, health: ServerHealth | undefined) {
+  return !!server.connection && health?.healthy !== false
 }
