@@ -341,7 +341,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             data-slot="composer-controls"
             data-overflow-start={overflow.start}
             data-overflow-end={overflow.end}
-            class="ms-1 me-3 h-full min-w-0 flex-1 overflow-x-auto overscroll-x-contain no-scrollbar"
+            class="ms-0.5 me-2.5 h-full min-w-0 flex-1 overflow-x-auto overscroll-x-contain px-0.5 no-scrollbar"
             onScroll={updateOverflow}
             aria-hidden={state.mode === "shell"}
             inert={state.mode === "shell" ? true : undefined}

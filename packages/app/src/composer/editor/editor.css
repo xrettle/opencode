@@ -25,6 +25,11 @@
   );
 }
 
+/* The controls viewport scrolls and clips, so toolbar rings hug each control and fit inside its 2px inline padding. */
+[data-component="composer"] :is([data-component="button-v2"], [data-component="icon-button-v2"]):is(:focus-visible, [data-state="focus"]) {
+  outline-offset: 0;
+}
+
 @media (hover: hover) {
   [data-component="composer"]:not(:hover) .composer-variant-default:not(:focus-visible, [data-expanded]) {
     opacity: 0;
