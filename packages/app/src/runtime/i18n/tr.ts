@@ -783,10 +783,6 @@ export const dict = {
     "Tüm etkinlikleri ayrı ayrı göster. Kabuk çıktısını, düzenlemeleri ve düşünmeyi genişletin.",
   "settings.timeline.description.detailed":
     "Kabuk çıktısını ve düzenlemelerini genişletin. Alt aracıları ayrı ayrı gösterin ve diğer etkinlikleri Kullanılan'da gruplandırın.",
-  "settings.timeline.description.compact":
-    "Tüm etkinlikleri, ayrıntıları daraltılmış şekilde Kullanılan'da gruplandırın.",
-  "settings.timeline.description.quiet":
-    "Düzenlemeleri ve alt aracıları Kullanılan'da gruplayın. Diğer etkinlikleri gizleyin.",
   "settings.timeline.description.text-only": "Tüm etkinlikleri gizle. Yalnızca mesajları göster.",
   "settings.timeline.description.custom": "Her etkinlik kategorisi için seçtiğiniz yerleşimi ve ayrıntıları kullanın.",
   "settings.timeline.custom": "Özel",

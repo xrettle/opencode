@@ -67,6 +67,7 @@ test("the session context menu renames, exports, and deletes a Home session", as
   await page.getByRole("menuitem", { name: "Delete…" }).click()
   const dialog = page.getByRole("dialog")
   await expect(dialog).toContainText('Delete session "Renamed from Home"?')
+  await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeFocused()
 
   const removed = page.waitForRequest(
     (request) => request.method() === "DELETE" && new URL(request.url()).pathname.endsWith(`/${fixture.targetID}`),

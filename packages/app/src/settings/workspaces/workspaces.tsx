@@ -597,7 +597,7 @@ function DialogDeleteWorkspaces(props: {
         />
       </DialogHeader>
       <DialogFooter>
-        <Button type="button" variant="neutral" onClick={() => dialog.close()}>
+        <Button type="button" variant="neutral" autofocus onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
         <Button type="button" variant="danger" onClick={remove}>
@@ -663,7 +663,7 @@ function DialogDeleteWorkspace(props: {
         />
       </DialogHeader>
       <DialogFooter>
-        <Button type="button" variant="neutral" onClick={() => dialog.close()}>
+        <Button type="button" variant="neutral" autofocus onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
         <Button type="button" variant="danger" disabled={status.isPending || status.isError} onClick={remove}>

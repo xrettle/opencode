@@ -286,7 +286,7 @@ export function createHomeSessionsController(home: HomeController) {
           />
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => dialog.close()}>
+          <Button variant="ghost" autofocus onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
           <Button variant="danger" onClick={confirm}>
