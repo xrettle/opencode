@@ -955,8 +955,38 @@ test.describe("background shortcut", () => {
     await expect(used).toHaveAttribute("aria-expanded", "false")
     const activity = page.getByRole("button", { name: "2 subagents · 1 shell", exact: true })
     const list = page.getByRole("menu", { name: "2 subagents · 1 shell", exact: true })
+    // The open menu hides the rest of the page from the accessibility tree, the capsule included.
+    const capsule = page.getByRole("button", { name: "2 subagents · 1 shell", exact: true, includeHidden: true })
+    const label = capsule.getByText("2 subagents · 1 shell", { exact: true })
+    const glyph = await capsule.locator("svg").boundingBox()
+    const text = await label.boundingBox()
 
     await activity.click()
+    await expect(list.getByText("2 subagents · 1 shell", { exact: true })).toHaveCount(0)
+    await expect(label).toBeVisible()
+    // The panel opens just above the capsule, without covering it, and its rows sit on the capsule's columns.
+    await expect
+      .poll(async () => {
+        const panel = await list.boundingBox()
+        const anchor = await capsule.boundingBox()
+        const rows = await list.getByRole("menuitem").evaluateAll((items) =>
+          items.map((item) => {
+            const content = item.querySelector('[data-slot="menu-v2-item-content"]')
+
+            return [
+              content?.querySelector(":scope > svg")?.getBoundingClientRect().left ?? NaN,
+              content?.querySelector(":scope > span")?.getBoundingClientRect().left ?? NaN,
+            ]
+          }),
+        )
+
+        return (
+          panel!.y + panel!.height <= anchor!.y &&
+          rows.length === 3 &&
+          rows.every(([left, start]) => Math.abs(left - glyph!.x) < 0.5 && Math.abs(start - text!.x) < 0.5)
+        )
+      })
+      .toBe(true)
     await expect(list.getByRole("menuitem")).toHaveText([
       /^Build\s*Foreground task$/,
       /^Explore\s*Background task$/,
