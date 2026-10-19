@@ -117,7 +117,7 @@ for (const direction of ["ltr", "rtl"] as const) {
       await models.getByRole("button", { name: "Connect an integration", exact: true }).click()
       await expect(models).toBeHidden()
       const providers = page.getByRole("dialog", { name: "Connect an integration", exact: true })
-      await expect(providers.getByRole("searchbox", { name: "Search providers", exact: true })).toBeVisible()
+      await expect(providers.getByRole("searchbox", { name: "Search providers", exact: true })).toBeFocused()
       await expect(page.getByRole("dialog")).toHaveCount(1)
     })
   }
