@@ -502,14 +502,20 @@
       color: var(--v2-text-text-muted);
     }
 
+    /* Code Mode results have no command line above them. */
+    [data-slot="bash-result"]:first-child {
+      border-block-start: 0;
+    }
+
     [data-slot="bash-command"] {
       color: var(--v2-text-text-base);
     }
   }
 }
 
+/* Only a shell's own card; an Execute output card opens inside the content and must not move the rows above it. */
 [data-component="collapsible"].tool-collapsible:has(
-    > [data-slot="collapsible-content"] [data-component="bash-output"][data-variant="shell"]
+    > [data-slot="collapsible-content"] > [data-component="bash-output"][data-variant="shell"]
   ) {
   --tool-content-gap: 8px;
 }
@@ -664,6 +670,11 @@
   [data-slot="execute-tool-call"][data-status="error"] [data-slot="execute-tool-call-marker"],
   [data-slot="execute-tool-error"] {
     color: var(--v2-state-fg-danger);
+  }
+
+  [data-slot="execute-tool-output"] {
+    margin-top: 4px;
+    padding-inline-start: 20px;
   }
 
   [data-slot="execute-tool-error"] {
