@@ -326,6 +326,8 @@ export const dict = {
   "dialog.mcp.error.copyFailed": "Couldn't copy error details",
   "dialog.mcp.error.open": "{{name}} failed, view error",
   "dialog.mcp.error.disable": "Disable",
+  "dialog.mcp.signIn": "Sign in",
+  "dialog.mcp.signIn.open": "Sign in to {{name}}",
   "dialog.mcp.error.details":
     "MCP server: {{name}}\nStatus: failed\nConfiguration: mcp.servers.{{name}}\nError: {{error}}",
   "dialog.fork.search.empty": "No messages found",

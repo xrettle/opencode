@@ -17,7 +17,10 @@ type Surface = "popover" | "dialog"
 // A session in a worktree of the project. The harness answers the MCP list for each location directory and stores
 // connect/disconnect results per directory; `requests` records every MCP request and the directory it targeted.
 // The popover belongs to the summary extension; the dialog (Ctrl+;) is the app's own MCP toggle.
-async function open(page: Page, input: { surface: Surface } & Pick<MockServerConfig, "mcp" | "onMcpAction">) {
+async function open(
+  page: Page,
+  input: { surface: Surface } & Pick<MockServerConfig, "mcp" | "onMcpAction" | "integrations" | "onIntegrationOAuth">,
+) {
   const requests: { path: string; directory: string }[] = []
   page.on("request", (request) => {
     const url = new URL(request.url())
@@ -25,7 +28,8 @@ async function open(page: Page, input: { surface: Surface } & Pick<MockServerCon
     if (request.method() === "OPTIONS" || !/^\/api\/(?:experimental\/)?mcp(?:\/|$)/.test(url.pathname)) return
     requests.push({ path: url.pathname, directory: url.searchParams.get("location[directory]") || directory })
   })
-  await mockWorkspace(page, {
+
+  const mock = await mockWorkspace(page, {
     name: "mcp-workspace",
     directory,
     project: { sandboxes: [workspace] },
@@ -34,6 +38,8 @@ async function open(page: Page, input: { surface: Surface } & Pick<MockServerCon
     seed: { settings: { keybinds: { "mcp.toggle": "ctrl+;" } } },
     mcp: input.mcp,
     onMcpAction: input.onMcpAction,
+    integrations: input.integrations,
+    onIntegrationOAuth: input.onIntegrationOAuth,
   })
   await page.goto(sessionHref(sessionID))
   await expectSessionTitle(page, title)
@@ -49,7 +55,7 @@ async function open(page: Page, input: { surface: Surface } & Pick<MockServerCon
   await show()
   await expect(panel.getByText("figma-desktop", { exact: true })).toBeVisible()
 
-  return { requests, panel, show, toggle: panel.getByRole("switch") }
+  return { requests, panel, show, push: mock.push, toggle: panel.getByRole("switch") }
 }
 
 for (const shared of [true, false]) {
@@ -183,3 +189,47 @@ for (const surface of ["popover", "dialog"] as const) {
     await expect(toast).toBeHidden()
   })
 }
+
+test("signs in to an auth-gated MCP from the dialog", async ({ page, context }) => {
+  const state = { signedIn: false }
+  const attempts: string[] = []
+  await context.route("https://auth.example.test/**", (route) => route.fulfill({ body: "Sign in" }))
+
+  const view = await open(page, {
+    surface: "dialog",
+    mcp: () => [
+      {
+        name: "figma-desktop",
+        integrationID: "figma-oauth",
+        status: state.signedIn ? { status: "connected" } : { status: "needs_auth", error: "Sign in required" },
+      },
+    ],
+    integrations: [{ id: "figma-oauth", name: "Figma", methods: [{ id: "oauth", type: "oauth" }], connections: [] }],
+    onIntegrationOAuth: (input) => {
+      attempts.push(input.directory)
+
+      return { url: "https://auth.example.test/authorize" }
+    },
+  })
+
+  // The switch would only start sign-in, so the dialog offers that action in its place.
+  await expect(view.toggle).toHaveCount(0)
+  const popup = page.waitForEvent("popup")
+  await view.panel.getByRole("button", { name: "Sign in to figma-desktop", exact: true }).click()
+  await expect(await popup).toHaveURL("https://auth.example.test/authorize")
+  expect(attempts).toEqual([workspace])
+
+  // Completing sign-in reconnects the server, which reports the change.
+  state.signedIn = true
+  await view.push([
+    {
+      id: "evt_mcp_signed_in",
+      created: 1,
+      type: "mcp.status.changed",
+      location: { directory: workspace },
+      data: { server: "figma-desktop" },
+    },
+  ])
+  await expect(view.toggle).toBeChecked()
+  await expect(view.panel.getByRole("button", { name: "Sign in to figma-desktop", exact: true })).toHaveCount(0)
+})

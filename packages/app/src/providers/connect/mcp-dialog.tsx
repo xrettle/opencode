@@ -7,6 +7,7 @@ import { Dialog, DialogBody, DialogHeader, DialogTitleGroup } from "@opencode/ui
 import { useFilteredList } from "@opencode/ui/hooks"
 import { Icon } from "@opencode/ui/icon"
 import { ScrollView } from "@opencode/ui/scroll-view"
+import { Spinner } from "@opencode/ui/spinner"
 import { Switch } from "@opencode/ui/switch"
 import { TextInput } from "@opencode/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -14,6 +15,9 @@ import { useMcpToggle } from "@/providers/connect/mcp"
 import { usePlatform } from "@/runtime/platform/platform"
 import { showToast } from "@/shell/notifications/toast"
 import "@/shell/search-list.css"
+
+const link =
+  "inline-flex cursor-pointer items-center gap-0.5 rounded-sm underline-offset-3 hover:underline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus"
 
 const statusLabels = {
   connected: "mcp.status.connected",
@@ -189,12 +193,17 @@ export const DialogSelectMcp: Component = () => {
                   <div role="listbox" class="search-list-results">
                     <For each={list.flat()}>
                       {(item) => {
-                        const status = () => servers().find((server) => server.name === item.name)?.status
+                        const server = () => servers().find((entry) => entry.name === item.name)
+                        const status = () => server()?.status
+                        // The switch would start sign-in anyway, so an auth-gated server shows that action instead.
+                        const signIn = () => status()?.status === "needs_auth" && !!server()?.integrationID
+                        const busy = () => toggle.isPending && toggle.variables === item.name
 
                         const detail = () => {
                           const current = status()
 
-                          if (!current || current.status === "pending" || current.status === "failed") return
+                          if (!current || current.status === "pending" || current.status === "failed" || signIn())
+                            return
 
                           return language.t(statusLabels[current.status])
                         }
@@ -223,27 +232,43 @@ export const DialogSelectMcp: Component = () => {
                                 <span class="search-list-detail">{detail()}</span>
                               </Show>
                             </div>
-                            {/* Sized for the failed link so every row's text truncates at the same edge. */}
+                            {/* Sized for the failed and sign-in links so every row's text truncates at the same edge. */}
                             <div
-                              class="search-list-trailing min-w-14 justify-end"
+                              class="search-list-trailing min-w-15 justify-end"
                               onClick={(event) => event.stopPropagation()}
                             >
                               <Show
                                 when={status()?.status === "failed"}
                                 fallback={
-                                  <Switch
-                                    checked={status()?.status === "connected"}
-                                    disabled={
-                                      status()?.status === "pending" ||
-                                      (toggle.isPending && toggle.variables === item.name)
+                                  <Show
+                                    when={signIn()}
+                                    fallback={
+                                      <Switch
+                                        checked={status()?.status === "connected"}
+                                        disabled={status()?.status === "pending" || busy()}
+                                        onChange={() => toggleServer(item.name)}
+                                      />
                                     }
-                                    onChange={() => toggleServer(item.name)}
-                                  />
+                                  >
+                                    <button
+                                      type="button"
+                                      class={`${link} text-v2-text-text-accent hover:text-v2-text-text-accent-hover disabled:cursor-default disabled:no-underline`}
+                                      aria-label={language.t("dialog.mcp.signIn.open", { name: item.name })}
+                                      aria-busy={busy()}
+                                      disabled={busy()}
+                                      onClick={() => toggleServer(item.name)}
+                                    >
+                                      {language.t("dialog.mcp.signIn")}
+                                      <Show when={busy()} fallback={<Icon name="chevron-right" size="small" />}>
+                                        <Spinner class="size-3.5" />
+                                      </Show>
+                                    </button>
+                                  </Show>
                                 }
                               >
                                 <button
                                   type="button"
-                                  class="inline-flex cursor-pointer items-center gap-0.5 rounded-sm text-v2-state-fg-danger underline-offset-3 hover:underline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus"
+                                  class={`${link} text-v2-state-fg-danger`}
                                   aria-label={language.t("dialog.mcp.error.open", { name: item.name })}
                                   onClick={() => select(item.name)}
                                 >
