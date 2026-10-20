@@ -25,6 +25,7 @@ import { isWorkspaceDirectory } from "@/workspaces/paths"
 import { parseCommentNote, readPromptPresentation } from "@/composer/comment-note"
 import { parseVoiceDelegation } from "./voice-delegation"
 import { useCommand } from "@/shell/commands/command"
+import { useExtensionScoped } from "@/runtime/extension/commands"
 import {
   SessionAncestorTrail,
   SessionHeaderLayout,
@@ -127,6 +128,8 @@ function MessageTimelineView(
   },
 ) {
   const language = useLanguage()
+  const command = useCommand()
+  const extensionScoped = useExtensionScoped()
   const server = useServer()
   const data = server.ctx.data
   const sdk = useWorkspaceLocation()
@@ -287,6 +290,22 @@ function MessageTimelineView(
 
     if (await props.action.rename(title.draft)) setTitle("editing", false)
   }
+
+  command.register(() =>
+    props.active === false || props.hideHeader
+      ? []
+      : [
+          {
+            id: "session.rename",
+            category: language.t("command.category.session"),
+            title: language.t("command.session.rename"),
+            keybind: "ctrl+r",
+            disabled: !sessionID() || !!parentID() || title.editing,
+            skip: (event) => extensionScoped(event.target),
+            onSelect: openTitleEditor,
+          },
+        ],
+  )
 
   createEffect(() => {
     if (props.active !== false) return
