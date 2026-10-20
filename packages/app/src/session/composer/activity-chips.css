@@ -11,7 +11,10 @@
 }
 
 /*
- * The open panel sits just above the capsule, with their inline-start edges aligned.
+ * The open panel sits just above the capsule, with their inline-start edges aligned, and its rows share the capsule's
+ * grid: the same hairline and 10px inset put row glyphs on the capsule's glyph, and the same 16px glyph and 8px gap put
+ * row text on the capsule's label. Rows are subgrids of one table, so agent names, descriptions and run times each
+ * line up in a column; descriptions take the remaining width and truncate only when the panel reaches its maximum.
  */
 [data-component="menu-v2-content"][data-slot="session-activity-panel"] {
   width: max-content;
@@ -19,9 +22,14 @@
   max-width: min(360px, calc(100vw - 56px));
   max-height: min(270px, var(--kb-popper-content-available-height, 270px));
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-content: start;
+  column-gap: 8px;
   padding: 4px;
   scroll-padding-block: 4px;
-  border: none;
+  /* The capsule's hairline, so both insets round to the same device pixels. */
+  border: 0.5px solid transparent;
   border-radius: 10px;
   background: var(--v2-background-bg-layer-01);
   text-align: start;
@@ -41,14 +49,23 @@
     unicode-bidi: isolate;
   }
 
-  /* Every row ends with its run time, 4px in, mirroring the glyph inset at the start. */
+  /* With the panel's 4px padding, rows inset 10px like the capsule's content, at the end as at the start. */
+  [data-component="menu-v2-item"],
+  [data-slot="menu-v2-item-content"] {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+  }
+
   [data-component="menu-v2-item"] {
-    padding-inline: 4px;
+    padding-inline: 6px;
     border-radius: 4px;
   }
 
-  [data-slot="menu-v2-item-content"] {
-    gap: calc(var(--spacing) * 2);
+  /* A shell's command spans the agent and description columns. */
+  [data-slot="menu-v2-item-content"] > span[dir="ltr"] {
+    grid-column: 2 / 4;
   }
 
   [data-slot="menu-v2-item-content"] > svg:first-child {
@@ -58,16 +75,15 @@
   }
 
   /*
-   * The run time and the stop button stack in one cell, so swapping them on hover does not resize the panel.
-   * The minimum width fits "59m 59s", so the panel only grows when a run passes an hour.
+   * The run time and the stop button stack in one end-aligned cell of the last column, which is as wide as the
+   * longest run time, so swapping them on hover moves nothing.
    */
   [data-slot="session-activity-end"] {
+    grid-column: 4;
     display: grid;
-    flex: none;
     align-items: center;
     justify-items: end;
-    min-width: 7ch;
-    margin-inline-start: 6px;
+    margin-inline-start: 8px;
 
     > * {
       grid-area: 1 / 1;

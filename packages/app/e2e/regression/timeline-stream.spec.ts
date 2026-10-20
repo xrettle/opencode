@@ -946,6 +946,65 @@ test.describe("background shortcut", () => {
     })
   }
 
+  for (const placement of ["right", "center"] as const) {
+    test(`anchors the activity panel to a ${placement}-placed capsule`, async ({ page }) => {
+      await setupTimeline(page, {
+        settings: { timelineDetail: detailed, backgroundActivity: placement },
+        sessionMessages: [
+          user,
+          {
+            id: "msg_backgrounded",
+            type: "assistant",
+            agent: "build",
+            model: { id: "model", providerID: "provider" },
+            content: [
+              {
+                type: "tool",
+                id: "call_shell_backgrounded",
+                name: "shell",
+                state: {
+                  status: "completed",
+                  input: { command: "sleep 120" },
+                  content: [{ type: "text", text: "working" }],
+                  metadata: { shellID: "shell_backgrounded", status: "running" },
+                },
+                time: { created: 2, completed: 3 },
+              },
+            ],
+            time: { created: 2, completed: 3 },
+          },
+        ],
+      })
+
+      // The open menu hides the rest of the page from the accessibility tree, the capsule included.
+      const capsule = page.getByRole("button", { name: "1 shell", exact: true, includeHidden: true })
+      const list = page.getByRole("menu", { name: "1 shell", exact: true })
+      const closed = (await capsule.boundingBox())!
+      const inset = (await capsule.locator("svg").boundingBox())!.x - closed.x
+
+      await capsule.click()
+      // Right placement shares the capsule's end edge and mirrors its inset there; centre placement shares its centre.
+      await expect
+        .poll(async () => {
+          const panel = (await list.boundingBox())!
+          const anchor = (await capsule.boundingBox())!
+          const end = await list
+            .getByRole("menuitem")
+            .locator('[data-slot="session-activity-elapsed"]')
+            .evaluate((element) => element.getBoundingClientRect().right)
+
+          return (
+            panel.y + panel.height <= anchor.y &&
+            Math.abs(panel.x + panel.width - end - inset) < 0.5 &&
+            (placement === "right"
+              ? Math.abs(panel.x + panel.width - (anchor.x + anchor.width)) < 0.5
+              : Math.abs(panel.x + panel.width / 2 - (anchor.x + anchor.width / 2)) < 0.5)
+          )
+        })
+        .toBe(true)
+    })
+  }
+
   test("separates blocking and already-backgrounded work into two rows", async ({ page }) => {
     const backgroundID = "ses_background_existing"
     const blockingID = "ses_background_blocking"
@@ -1058,16 +1117,15 @@ test.describe("background shortcut", () => {
     const label = capsule.getByText("2 subagents · 1 shell", { exact: true })
     const glyph = await capsule.locator("svg").boundingBox()
     const text = await label.boundingBox()
-    const border = await capsule.evaluate((element) =>
-      Number.parseFloat(getComputedStyle(element).borderInlineStartWidth),
-    )
+    const inset = glyph!.x - (await capsule.boundingBox())!.x
 
     await activity.click()
     await expect(list.locator('[data-slot="menu-v2-group-label"], [data-slot="menu-v2-separator"]')).toHaveCount(0)
     await expect(list.getByText("2 subagents · 1 shell", { exact: true })).toHaveCount(0)
     await expect(label).toBeVisible()
 
-    // The panel opens above the capsule; its rows have 2px less start padding and no outer border.
+    // The panel opens above the capsule on its grid: row glyphs on the capsule's glyph, names and commands on its
+    // label, and run times ending as far from the panel's end as the glyphs start from its start.
     await expect
       .poll(async () => {
         const panel = await list.boundingBox()
@@ -1080,6 +1138,7 @@ test.describe("background shortcut", () => {
             return [
               content?.querySelector(":scope > svg")?.getBoundingClientRect().left ?? NaN,
               content?.querySelector(":scope > span")?.getBoundingClientRect().left ?? NaN,
+              item.querySelector('[data-slot="session-activity-elapsed"]')?.getBoundingClientRect().right ?? NaN,
             ]
           }),
         )
@@ -1088,8 +1147,10 @@ test.describe("background shortcut", () => {
           panel!.y + panel!.height <= anchor!.y &&
           rows.length === 3 &&
           rows.every(
-            ([left, start]) =>
-              Math.abs(left + 2 + border - glyph!.x) < 0.5 && Math.abs(start + 2 + border - text!.x) < 0.5,
+            ([left, start, end]) =>
+              Math.abs(left - glyph!.x) < 0.5 &&
+              Math.abs(start - text!.x) < 0.5 &&
+              Math.abs(panel!.x + panel!.width - end - inset) < 0.5,
           )
         )
       })
