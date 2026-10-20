@@ -163,7 +163,13 @@ export function SessionLocation(props: {
           <Show when={!props.compact && worktree()}>
             {(name) => (
               <>
-                <Icon name="chevron-right" class="-mx-1 shrink-0 text-v2-icon-icon-faint" />
+                <span
+                  class="shrink-0 ps-1 pe-0.5 text-[11px] font-medium text-v2-text-text-faint"
+                  aria-hidden="true"
+                >
+                  /
+                </span>
+                <Icon name="outline-worktree" class="shrink-0 text-v2-icon-icon-muted" />
                 <bdi dir="auto" data-slot="session-location-worktree" class="min-w-12 shrink-[1000] truncate">
                   {name()}
                 </bdi>

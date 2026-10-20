@@ -153,6 +153,8 @@ test.describe("location", () => {
     await openSession(page, workspace)
     await expect(trigger(page).locator('[data-slot="session-location-project"]')).toHaveText("Location")
     await expect(trigger(page).locator('[data-slot="session-location-worktree"]')).toHaveText("quiet-falcon")
+    await expect(trigger(page).getByText("/", { exact: true })).toBeVisible()
+    await expect(trigger(page).locator('svg:has(use[href="#opencode-v2-icon-outline-worktree"])')).toBeVisible()
     await trigger(page).click()
     const card = page.locator('[data-slot="session-location-card"]')
     await expect(card.locator('[data-slot="session-location-path"]')).toHaveText(worktree)
