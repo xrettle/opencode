@@ -1,7 +1,7 @@
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { Icon } from "@opencode/ui/icon"
-import { Show, createMemo, createSignal } from "solid-js"
+import { Show, createMemo, createSignal, type JSX } from "solid-js"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { getFilename } from "@opencode/util/path"
 import {
@@ -29,6 +29,7 @@ import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import { useSettings } from "@/settings/model"
 import type { NewSessionWorkspaceController } from "./workspace/controller"
+import { NewSessionBranch } from "./workspace/selector"
 import { NewSessionPinBoard } from "./pin-board"
 import { NewSessionWordmark } from "./wordmark"
 
@@ -85,6 +86,7 @@ export function NewSessionView(props: {
                       project={project()}
                       workspace={props.workspace.bar.visible() ? props.workspace.selection.value() : "main"}
                       root={props.workspace.project.root()}
+                      branch={<NewSessionBranch workspace={props.workspace} onDone={props.composer.restoreFocus} />}
                       onboarding={onboardingReady() && !onboarding.used && props.workspace.bar.visible()}
                       onClick={() =>
                         props.location({
@@ -198,12 +200,13 @@ function NewSessionTips(props: { selection: ComposerModel["model"]["selection"];
   )
 }
 
-/** The tray under the Composer: the location picker on the left and the session's directory on the right. */
+/** The composer tray: combined location picker, Git context, and the session's directory. */
 function NewSessionLocation(props: {
   project: PromptProject
   /** "main", "create", or a worktree directory. */
   workspace: string
   root: string
+  branch?: JSX.Element
   onboarding: boolean
   onClick: () => void
 }) {
@@ -225,8 +228,8 @@ function NewSessionLocation(props: {
   }
 
   return (
-    <div class="flex h-9 min-w-0 items-center gap-3 ps-2 pe-2 text-[13px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
-      <div class="flex min-w-0 max-w-[60%] shrink-0 @max-[560px]:max-w-full">
+    <div class="flex min-h-9 min-w-0 items-center gap-3 ps-2 pe-2 text-[13px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
+      <div class="flex min-w-0 max-w-full flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
         <Tooltip
           appearance={props.onboarding ? "large" : undefined}
           placement="top"
@@ -265,7 +268,9 @@ function NewSessionLocation(props: {
             <Show when={worktree()}>
               {(name) => (
                 <>
-                  <Icon name="chevron-right" class="-mx-1 shrink-0 text-v2-icon-icon-faint" />
+                  <span class="shrink-0 ps-1 pe-0.5 text-[11px] font-medium text-v2-text-text-faint" aria-hidden="true">
+                    /
+                  </span>
                   <span class="min-w-12 shrink-[1000] truncate">{name()}</span>
                 </>
               )}
@@ -279,6 +284,7 @@ function NewSessionLocation(props: {
             </Show>
           </button>
         </Tooltip>
+        {props.branch}
       </div>
       <Show when={path()}>
         {(directory) => (

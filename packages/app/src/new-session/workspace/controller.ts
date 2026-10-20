@@ -1,3 +1,4 @@
+import { debounce } from "@solid-primitives/scheduled"
 import { createEffect, createMemo, createResource, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useWorkspaceLocation } from "@/workspaces/location"
@@ -61,8 +62,13 @@ export function createNewSessionWorkspaceController(input: {
   const tabs = useTabs()
 
   const [state, setState] = createStore({
+    branchesOpen: false,
+    search: "",
     existing: undefined as { projectID: string; directory: string } | undefined,
   })
+
+  const searchBranches = debounce((search: string) => setState("search", search.trim()), 100)
+  onCleanup(searchBranches.clear)
 
   const currentProject = createMemo(() => {
     const projectID = data.location.info({ directory: sdk().directory })?.project.id
@@ -170,6 +176,27 @@ export function createNewSessionWorkspaceController(input: {
   )
 
   const projectRoot = createMemo(() => currentProject()?.worktree ?? sdk().directory)
+  const branchDirectory = () => (value() === "create" ? projectRoot() : sdk().directory)
+
+  const [branches, branchActions] = createResource(
+    () =>
+      state.branchesOpen && value() === "create" && visible()
+        ? { directory: projectRoot(), search: state.search }
+        : undefined,
+    async (source) =>
+      serverSDK.api.vcs.branch
+        .list({ location: { directory: source.directory }, search: source.search, limit: 50 })
+        .then((response) => ({ ...source, items: response.data, failed: false }))
+        .catch(() => ({ ...source, items: [], failed: true })),
+  )
+
+  // Branch search must not suspend the draft or expose another project's previous results.
+  const branchResults = () => {
+    if (branches.state !== "ready" && branches.state !== "refreshing") return
+    const loaded = branches.latest
+
+    return loaded?.directory === projectRoot() && loaded.search === state.search ? loaded : undefined
+  }
 
   createEffect(() => {
     void Promise.all([
@@ -177,6 +204,10 @@ export function createNewSessionWorkspaceController(input: {
       data.project.sync(),
       data.location.vcs.sync({ directory: sdk().directory }),
     ]).catch(() => undefined)
+  })
+  createEffect(() => {
+    if (value() !== "create" || sameDirectory(projectRoot(), sdk().directory)) return
+    void data.location.vcs.sync({ directory: projectRoot() }).catch(() => undefined)
   })
   // Only the selected worktree feeds the branch label. Syncing every worktree in the inventory boots
   // each one on the server, which then emits `agent.updated` and makes the client run the full
@@ -194,7 +225,7 @@ export function createNewSessionWorkspaceController(input: {
   const branch = createMemo(() =>
     resolveNewSessionBranch({
       worktree: value(),
-      directory: sdk().directory,
+      directory: branchDirectory(),
       createBranch: input.selectedBranch(),
       worktreeBranch: (worktree) => data.location.vcs.info({ directory: worktree })?.branch.current,
     }),
@@ -249,6 +280,7 @@ export function createNewSessionWorkspaceController(input: {
       },
       remember,
       set: select,
+      branch: (branch: string) => input.setSelectedBranch(branch),
       cycle: () => select(cycleNewSessionWorktree({ current: value(), existing: existing() })),
     },
     project: {
@@ -260,6 +292,17 @@ export function createNewSessionWorkspaceController(input: {
     bar: {
       visible,
       branch,
+    },
+    branches: {
+      items: () => branchResults()?.items ?? [],
+      loading: () => branches.loading,
+      failed: () => branchResults()?.failed ?? false,
+      search: searchBranches,
+      open: (open: boolean) => {
+        searchBranches.clear()
+        setState({ branchesOpen: open, search: "" })
+      },
+      retry: () => branchActions.refetch(),
     },
   }
 }

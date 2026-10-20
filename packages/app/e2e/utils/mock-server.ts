@@ -82,7 +82,8 @@ export interface MockServerConfig {
     items: SessionMessageInfo[]
     cursor?: string
   }
-  vcs?: { current: string; default: string }
+  vcs?: { current: string; default: string } | ((directory: string) => { current: string; default: string })
+  branches?: (input: { directory: string; search?: string; limit?: number }) => string[] | Promise<string[]>
   // Initializes the mock project's VCS; without a handler this mutation answers 501.
   onVcsInit?: (input: { directory: string; provider?: string }) => void
   vcsDiff?: unknown[] | ((input: { mode?: string }) => unknown[])
@@ -1018,10 +1019,14 @@ function mockHandlers(
                 }),
           ),
         formRequests: () => Effect.succeed({ location: location(config), data: resolve(config.forms ?? []) }),
-        vcs: () =>
+        vcs: (ctx) =>
           Effect.succeed({
-            location: location(config),
-            data: { branch: config.vcs ?? { current: "main", default: "main" } },
+            location: location(config, requestDirectory(config, ctx.request)),
+            data: {
+              branch: Predicate.isFunction(config.vcs)
+                ? config.vcs(requestDirectory(config, ctx.request))
+                : (config.vcs ?? { current: "main", default: "main" }),
+            },
           }),
         vcsInit: (ctx) => {
           if (!config.onVcsInit) return unsupported("initialize VCS", "onVcsInit")
@@ -1044,7 +1049,26 @@ function mockHandlers(
           }).pipe(Effect.andThen(noContent))
         },
         vcsStatus: () => Effect.succeed({ location: location(config), data: [] }),
-        vcsBranches: () => Effect.succeed({ location: location(config), data: ["main"] }),
+        vcsBranches: (ctx) => {
+          const query = new URL(ctx.request.url, "http://localhost").searchParams
+          const search = query.get("search") ?? ""
+          const limit = Number(query.get("limit") ?? 50)
+
+          return Effect.promise(() =>
+            Promise.resolve(
+              config.branches?.({
+                directory: requestDirectory(config, ctx.request),
+                search,
+                limit,
+              }) ?? ["main"],
+            ),
+          ).pipe(
+            Effect.map((items) => ({
+              location: location(config, requestDirectory(config, ctx.request)),
+              data: items.filter((branch) => branch.toLowerCase().includes(search.toLowerCase())).slice(0, limit),
+            })),
+          )
+        },
         vcsDiff: (ctx) =>
           Effect.sync(() => ({
             location: location(config),

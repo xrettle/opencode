@@ -51,6 +51,90 @@ test("the new session screen does not show session details", async ({ page }) =>
   await expect(page.getByRole("button", { name: "Session details", exact: true })).toHaveCount(0)
 })
 
+test("the combined location picker shows checkout branches and chooses the base for a new worktree", async ({
+  page,
+}) => {
+  const listed = Promise.withResolvers<string[]>()
+  const searches: { directory: string; search?: string; limit?: number }[] = []
+  const existing = "C:/OpenCode/BranchContext/.worktrees/stellar-orchid"
+
+  const view = await openWorktreeDraft(page, {
+    name: "BranchContext",
+    project: { name: "OpenCode" },
+    vcs: (directory) => ({
+      current: directory === existing ? "model-picker-dialog" : "timeline-quotes",
+      default: "main",
+    }),
+    worktrees: () => [{ directory: "C:/OpenCode/BranchContext" }, { directory: existing, strategy: "git" }],
+    branches: (input) => {
+      searches.push(input)
+
+      return listed.promise
+    },
+  })
+
+  const screen = page.locator('[data-component="new-session"]')
+  const base = screen.getByRole("button", { name: "from timeline-quotes", exact: true })
+  await expect(base).toBeVisible()
+  expect(searches).toEqual([])
+  await base.click()
+  const search = page.getByRole("textbox", { name: "Search branches", exact: true })
+  await expect(search).toBeFocused()
+  await expect(page.getByText("Loading", { exact: true })).toBeVisible()
+  await expect(newSessionLocation(page)).toBeVisible()
+  listed.resolve(["timeline-quotes", "release/base", "origin/dev"])
+  await expect(page.getByRole("menuitemradio", { name: "release/base", exact: true })).toBeVisible()
+  await search.fill("release")
+  await expect(page.getByRole("menuitemradio")).toHaveText(["release/base"])
+  await page.getByRole("menuitemradio", { name: "release/base", exact: true }).click()
+  const selected = screen.getByRole("button", { name: "from release/base", exact: true })
+  await expect(selected).toBeVisible()
+  await expect(view.editor).toBeFocused()
+  expect(searches).toEqual([
+    { directory: view.directory, search: "", limit: 50 },
+    { directory: view.directory, search: "release", limit: 50 },
+  ])
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect
+    .poll(async () => {
+      const location = await newSessionLocation(page).boundingBox()
+      const branch = await selected.boundingBox()
+
+      return !!location && !!branch && branch.y >= location.y + location.height
+    })
+    .toBe(true)
+
+  const select = async (name: RegExp) => {
+    await newSessionLocation(page).click()
+    await page.getByRole("textbox", { name: "Search projects", exact: true }).press("ArrowRight")
+    await page.getByRole("option", { name }).click()
+    await expect(view.editor).toBeFocused()
+  }
+
+  await select(/^stellar-orchid /)
+  await expect(screen.getByText("model-picker-dialog", { exact: true })).toBeVisible()
+  await expect(screen.getByRole("button", { name: /from / })).toHaveCount(0)
+  await select(/^BranchContext /)
+  await expect(screen.getByText("timeline-quotes", { exact: true })).toBeVisible()
+  await expect(screen.getByRole("button", { name: /from / })).toHaveCount(0)
+  await select(/^New worktree/)
+  await expect(base).toBeVisible()
+  await base.click()
+  await expect(search).toBeFocused()
+  await page.getByRole("menuitemradio", { name: "origin/dev", exact: true }).click()
+  await expect(screen.getByRole("button", { name: "from origin/dev", exact: true })).toBeVisible()
+  await view.editor.fill("Use the selected base")
+  await submit(page).click()
+  await expect
+    .poll(() => view.worktreeRequests.map((request) => request.body))
+    .toEqual([expect.objectContaining({ from: view.directory, branch: "origin/dev" })])
+  view.worktree.resolve({ status: 200, json: { directory: existing } })
+  await expect
+    .poll(() => view.prompts)
+    .toEqual([expect.objectContaining({ body: expect.objectContaining({ text: "Use the selected base" }) })])
+})
+
 test("the dark new session panel exposes no lighter background at its rounded corners", async ({ page }) => {
   await page.setViewportSize({ width: 935, height: 522 })
   await openDraft(page, { name: "PanelCorner", seed: { theme: { id: "oc-2", scheme: "dark" } } })
