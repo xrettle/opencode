@@ -1,7 +1,9 @@
 import { app } from "electron"
 import { Context, Effect, FileSystem, Layer, Path } from "effect"
+import { CHANNEL } from "../constants"
 import { BackgroundServiceState } from "./background-service-state"
 import { cleanStages } from "./cli-stages"
+import { serviceVersion, shouldCleanStages } from "./cli-version"
 import { DesktopCli } from "./desktop-cli"
 import { SidecarCredentials } from "./sidecar-credentials"
 import { sidecarProbe } from "./sidecar-probe"
@@ -36,7 +38,8 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   const runFork = Effect.runForkWith(yield* Effect.context<FileSystem.FileSystem | Path.Path>())
   const isolated = !app.isPackaged && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1"
   const cli = yield* desktopCli.resolve
-  const version = mode === "initial" ? cli.version : undefined
+  const version = serviceVersion({ channel: CHANNEL, isolated, mode, version: cli.version })
+  let started = false
 
   if (isolated) process.env.XDG_STATE_HOME = app.getPath("userData")
   const client = yield* Effect.promise(() => import("@opencode/client/service"))
@@ -56,8 +59,10 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
         "--service",
         ...(isolated ? ["--hostname", "0.0.0.0", "--port", String(0x0c0c)] : []),
       ],
-      onStart: (reason, previousVersion) =>
-        runFork(Effect.logInfo("v2 CLI background service starting", { reason, previousVersion })),
+      onStart: (reason, previousVersion) => {
+        started = true
+        runFork(Effect.logInfo("v2 CLI background service starting", { reason, previousVersion }))
+      },
     })
 
   // A compatible service the entry module already found is adopted at once; ensure() still runs
@@ -78,8 +83,8 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   })
 
   // Only packaged and isolated builds run a staged copy; any other binary sits in the source tree.
-  // The service now runs the current version, so an older copy at most belongs to a process still exiting.
-  if (mode === "initial" && (app.isPackaged || isolated) && cli.binary)
+  // Beta adopts an existing service across versions, so its stage stays until a new service starts.
+  if (shouldCleanStages({ isolated, mode, packaged: app.isPackaged, started, version }) && cli.binary)
     runFork(
       cleanStages(cli.binary).pipe(
         Effect.catch((error) => Effect.logError("failed to clean staged v2 CLIs", { error })),
