@@ -1,7 +1,7 @@
 export default {
   title: "Session details",
-  tooltip: "Summary",
-  "command.toggle": "Toggle summary",
+  tooltip: "Session details",
+  "command.toggle": "Toggle session details",
   noBranch: "No branch",
   "move.title": "Move to worktree",
   "move.menu": "Move session to",
@@ -10,6 +10,7 @@ export default {
   mcp: "MCP",
   "mcp.title": "Configured MCP servers",
   "mcp.empty": "No MCP servers configured",
+  "mcp.manage": "Manage MCP servers",
   plugins: "Plugins",
   "plugins.configured": "Configured plugins",
   "plugins.empty": "No plugins configured",
