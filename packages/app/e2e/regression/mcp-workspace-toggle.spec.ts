@@ -41,6 +41,7 @@ async function open(
     integrations: input.integrations,
     onIntegrationOAuth: input.onIntegrationOAuth,
   })
+
   await page.goto(sessionHref(sessionID))
   await expectSessionTitle(page, title)
   await expect(page.getByRole("textbox", { name: "Prompt", exact: true })).toBeEditable()
@@ -107,21 +108,11 @@ for (const surface of ["popover", "dialog"] as const) {
     const view = await open(page, {
       surface,
       mcp: (target) => [
-        {
-          name: "figma-desktop",
-          status: { status: target !== workspace ? "connected" : surface === "popover" ? "failed" : "disabled", error },
-        },
+        { name: "figma-desktop", status: { status: target !== workspace ? "connected" : "disabled", error } },
       ],
       // Connection failures are reported by the refreshed status, not the HTTP response.
       onMcpAction: (input) => (input.action === "connect" && state.fail ? { status: "failed", error } : undefined),
     })
-
-    // A failed server shows as enabled in the popover; switch it off first.
-    const reset = async () => {
-      if (surface !== "popover") return
-      await expect(view.toggle).toBeChecked()
-      await view.panel.getByText("figma-desktop", { exact: true }).click()
-    }
 
     // The dialog opens with its search focused and the first server highlighted.
     if (surface === "dialog") {
@@ -129,7 +120,6 @@ for (const surface of ["popover", "dialog"] as const) {
       await expect(view.panel.getByRole("option")).toHaveAttribute("aria-selected", "true")
     }
 
-    await reset()
     await expect(view.toggle).not.toBeChecked()
     await expect(view.toggle).toBeEnabled()
     view.requests.length = 0
@@ -141,95 +131,84 @@ for (const surface of ["popover", "dialog"] as const) {
       .filter({ has: page.getByText("Request failed", { exact: true }) })
 
     await expect(toast.getByText(`figma-desktop: ${error}`, { exact: true })).toBeVisible()
-    // The dialog replaces a failed server's switch with a button that opens its error.
-    const failed = view.panel.getByRole("button", { name: "figma-desktop failed, view error", exact: true })
-    const details = page.getByRole("dialog", { name: "MCP server: figma-desktop", exact: true })
-
-    if (surface === "popover") {
-      await expect(view.toggle).toBeChecked()
-      await expect(view.toggle).toBeEnabled()
-    }
-
-    if (surface === "dialog") await expect(view.toggle).toHaveCount(0)
     expect(view.requests.filter((request) => request.path.endsWith("/connect"))).toEqual([
       { path: "/api/experimental/mcp/figma-desktop/connect", directory: workspace },
     ])
     expect(view.requests.every((request) => request.directory === workspace)).toBe(true)
 
+    // Both surfaces replace a failed server's switch with a link that opens its error.
+    const failed = view.panel.getByRole("button", { name: "figma-desktop failed, view error", exact: true })
+    const details = page.getByRole("dialog", { name: "MCP server: figma-desktop", exact: true })
+    await expect(view.toggle).toHaveCount(0)
+    await expect(view.panel.getByText("Failed", { exact: true })).toHaveCount(1)
+    await failed.click()
+    await expect(details.getByText(error, { exact: true })).toBeVisible()
+
     if (surface === "dialog") {
-      await failed.click()
-      await expect(details.getByText(error, { exact: true })).toBeVisible()
       await details.getByRole("button", { name: "Navigate back", exact: true }).click()
       await expect(failed).toBeVisible()
-    }
-
-    if (surface === "popover") await page.keyboard.press("Escape")
-
-    if (surface === "dialog") await view.panel.getByRole("button", { name: "Close", exact: true }).click()
-    await expect(view.panel).toBeHidden()
-    await toast.getByRole("button", { name: "Dismiss", exact: true }).click()
-    await expect(toast).toBeHidden()
-    state.fail = false
-    await expect(page.getByRole("dialog", { name: "Session details", exact: true })).toBeHidden()
-    await view.show()
-    await reset()
-
-    if (surface === "dialog") {
       await failed.click()
-      await details.getByRole("button", { name: "Try again", exact: true }).click()
     }
+
+    state.fail = false
+    await details.getByRole("button", { name: "Try again", exact: true }).click()
 
     if (surface === "popover") {
-      await expect(view.toggle).not.toBeChecked()
-      await expect(view.toggle).toBeEnabled()
-      await view.panel.locator('[data-slot="switch-control"]').click()
+      await expect(details).toBeHidden()
+
+      if (!(await view.panel.isVisible())) await view.show()
     }
+
     await expect(view.toggle).toBeChecked()
     await expect(view.toggle).toBeEnabled()
-    await expect(toast).toBeHidden()
   })
 }
 
-test("signs in to an auth-gated MCP from the dialog", async ({ page, context }) => {
-  const state = { signedIn: false }
-  const attempts: string[] = []
-  await context.route("https://auth.example.test/**", (route) => route.fulfill({ body: "Sign in" }))
+for (const surface of ["popover", "dialog"] as const) {
+  test(`signs in to an auth-gated MCP from the ${surface}`, async ({ page, context }) => {
+    const state = { signedIn: false }
+    const attempts: string[] = []
+    await context.route("https://auth.example.test/**", (route) => route.fulfill({ body: "Sign in" }))
 
-  const view = await open(page, {
-    surface: "dialog",
-    mcp: () => [
-      {
-        name: "figma-desktop",
-        integrationID: "figma-oauth",
-        status: state.signedIn ? { status: "connected" } : { status: "needs_auth", error: "Sign in required" },
+    const view = await open(page, {
+      surface,
+      mcp: () => [
+        {
+          name: "figma-desktop",
+          integrationID: "figma-oauth",
+          status: state.signedIn ? { status: "connected" } : { status: "needs_auth", error: "Sign in required" },
+        },
+      ],
+      integrations: [{ id: "figma-oauth", name: "Figma", methods: [{ id: "oauth", type: "oauth" }], connections: [] }],
+      onIntegrationOAuth: (input) => {
+        attempts.push(input.directory)
+
+        return { url: "https://auth.example.test/authorize" }
       },
-    ],
-    integrations: [{ id: "figma-oauth", name: "Figma", methods: [{ id: "oauth", type: "oauth" }], connections: [] }],
-    onIntegrationOAuth: (input) => {
-      attempts.push(input.directory)
+    })
 
-      return { url: "https://auth.example.test/authorize" }
-    },
+    // The switch would only start sign-in, so both surfaces offer that action in its place.
+    await expect(view.toggle).toHaveCount(0)
+    await expect(view.panel.getByText("Sign in required", { exact: true })).toHaveCount(0)
+    const popup = page.waitForEvent("popup")
+    await view.panel.getByRole("button", { name: "Sign in to figma-desktop", exact: true }).click()
+    await expect(await popup).toHaveURL("https://auth.example.test/authorize")
+    expect(attempts).toEqual([workspace])
+
+    // Completing sign-in reconnects the server, which reports the change.
+    state.signedIn = true
+    await view.push([
+      {
+        id: "evt_mcp_signed_in",
+        created: 1,
+        type: "mcp.status.changed",
+        location: { directory: workspace },
+        data: { server: "figma-desktop" },
+      },
+    ])
+
+    if (!(await view.panel.isVisible())) await view.show()
+    await expect(view.toggle).toBeChecked()
+    await expect(view.panel.getByRole("button", { name: "Sign in to figma-desktop", exact: true })).toHaveCount(0)
   })
-
-  // The switch would only start sign-in, so the dialog offers that action in its place.
-  await expect(view.toggle).toHaveCount(0)
-  const popup = page.waitForEvent("popup")
-  await view.panel.getByRole("button", { name: "Sign in to figma-desktop", exact: true }).click()
-  await expect(await popup).toHaveURL("https://auth.example.test/authorize")
-  expect(attempts).toEqual([workspace])
-
-  // Completing sign-in reconnects the server, which reports the change.
-  state.signedIn = true
-  await view.push([
-    {
-      id: "evt_mcp_signed_in",
-      created: 1,
-      type: "mcp.status.changed",
-      location: { directory: workspace },
-      data: { server: "figma-desktop" },
-    },
-  ])
-  await expect(view.toggle).toBeChecked()
-  await expect(view.panel.getByRole("button", { name: "Sign in to figma-desktop", exact: true })).toHaveCount(0)
-})
+}

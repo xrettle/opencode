@@ -7,7 +7,8 @@ import { Dialog, DialogBody, DialogHeader, DialogTitleGroup } from "@opencode/ui
 import { useFilteredList } from "@opencode/ui/hooks"
 import { Icon } from "@opencode/ui/icon"
 import { ScrollView } from "@opencode/ui/scroll-view"
-import { Spinner } from "@opencode/ui/spinner"
+import { ErrorDetails } from "@opencode/ui/error-details"
+import { StatusLink } from "@opencode/ui/status-link"
 import { Switch } from "@opencode/ui/switch"
 import { TextInput } from "@opencode/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -16,9 +17,6 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { showToast } from "@/shell/notifications/toast"
 import "@/shell/search-list.css"
 
-const link =
-  "inline-flex cursor-pointer items-center gap-0.5 rounded-sm underline-offset-3 hover:underline focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus"
-
 const statusLabels = {
   connected: "mcp.status.connected",
   failed: "mcp.status.failed",
@@ -26,15 +24,25 @@ const statusLabels = {
   disabled: "mcp.status.disabled",
 } as const
 
+/** The MCPs dialog for the current workspace. */
 export const DialogSelectMcp: Component = () => {
-  const data = useData()
   const sdk = useWorkspaceLocation()
+
+  return <DialogMcp directory={sdk().directory} />
+}
+
+/** Lists the MCP servers of `directory`; `server` opens directly on that server's error. */
+export const DialogMcp: Component<{ directory: string; server?: string }> = (props) => {
+  const data = useData()
   const language = useLanguage()
   const platform = usePlatform()
-  const toggle = useMcpToggle(() => sdk().directory)
-  const [store, setStore] = createStore<{ detail?: string; copied: boolean }>({ copied: false })
+  const directory = () => props.directory
+  const toggle = useMcpToggle(directory)
+  const [store, setStore] = createStore<{ detail?: string; copied: boolean }>({ detail: props.server, copied: false })
+  const loaded = () => data.location.mcp.server.list({ directory: directory() })
+  const servers = createMemo(() => loaded() ?? [])
 
-  const servers = createMemo(() => data.location.mcp.server.list({ directory: sdk().directory }) ?? [])
+  createEffect(() => void data.location.mcp.server.sync({ directory: directory() }).catch(() => undefined))
 
   const items = createMemo(() =>
     servers()
@@ -85,7 +93,7 @@ export const DialogSelectMcp: Component = () => {
   // A successful retry or a removed server leaves nothing to show, so return to the list.
   createEffect(
     on(failure, (current) => {
-      if (store.detail && !current) back()
+      if (store.detail && loaded() && !current) back()
     }),
   )
 
@@ -250,31 +258,24 @@ export const DialogSelectMcp: Component = () => {
                                       />
                                     }
                                   >
-                                    <button
-                                      type="button"
-                                      class={`${link} text-v2-text-text-accent hover:text-v2-text-text-accent-hover disabled:cursor-default disabled:no-underline`}
+                                    <StatusLink
+                                      tone="accent"
+                                      busy={busy()}
                                       aria-label={language.t("dialog.mcp.signIn.open", { name: item.name })}
-                                      aria-busy={busy()}
-                                      disabled={busy()}
                                       onClick={() => toggleServer(item.name)}
                                     >
                                       {language.t("dialog.mcp.signIn")}
-                                      <Show when={busy()} fallback={<Icon name="chevron-right" size="small" />}>
-                                        <Spinner class="size-3.5" />
-                                      </Show>
-                                    </button>
+                                    </StatusLink>
                                   </Show>
                                 }
                               >
-                                <button
-                                  type="button"
-                                  class={`${link} text-v2-state-fg-danger`}
+                                <StatusLink
+                                  tone="danger"
                                   aria-label={language.t("dialog.mcp.error.open", { name: item.name })}
                                   onClick={() => select(item.name)}
                                 >
                                   {language.t("mcp.status.failed")}
-                                  <Icon name="chevron-right" size="small" />
-                                </button>
+                                </StatusLink>
                               </Show>
                             </div>
                           </div>
@@ -296,6 +297,7 @@ export const DialogSelectMcp: Component = () => {
                 <button
                   ref={backRef}
                   type="button"
+                  autofocus
                   class="flex size-5 shrink-0 items-center justify-center rounded-sm text-v2-icon-icon-muted hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none"
                   onClick={back}
                   aria-label={language.t("common.goBack")}
@@ -306,29 +308,21 @@ export const DialogSelectMcp: Component = () => {
               </div>
             </DialogHeader>
             <DialogBody class="search-list-body">
-              <div class="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4">
-                <pre
-                  tabIndex={0}
-                  class="min-h-0 flex-1 select-text overflow-auto whitespace-pre-wrap break-words rounded-md bg-v2-background-bg-layer-03 px-3 py-2 font-mono text-[12px] leading-[18px] text-v2-text-text-base focus-visible:outline focus-visible:outline-1 focus-visible:outline-v2-border-border-focus"
+              <ErrorDetails error={current().error}>
+                <Button variant="ghost" icon={store.copied ? "check" : "copy"} onClick={() => void copy(current())}>
+                  {language.t(store.copied ? "common.copied" : "dialog.mcp.error.copy")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  disabled={toggle.isPending}
+                  onClick={() => toggle.mutate({ name: current().name, enabled: false })}
                 >
-                  {current().error}
-                </pre>
-                <div class="flex shrink-0 justify-end gap-2">
-                  <Button variant="ghost" icon={store.copied ? "check" : "copy"} onClick={() => void copy(current())}>
-                    {language.t(store.copied ? "common.copied" : "dialog.mcp.error.copy")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    disabled={toggle.isPending}
-                    onClick={() => toggle.mutate({ name: current().name, enabled: false })}
-                  >
-                    {language.t("dialog.mcp.error.disable")}
-                  </Button>
-                  <Button variant="neutral" disabled={toggle.isPending} onClick={() => toggleServer(current().name)}>
-                    {language.t("common.retry")}
-                  </Button>
-                </div>
-              </div>
+                  {language.t("dialog.mcp.error.disable")}
+                </Button>
+                <Button variant="neutral" disabled={toggle.isPending} onClick={() => toggleServer(current().name)}>
+                  {language.t("common.retry")}
+                </Button>
+              </ErrorDetails>
             </DialogBody>
           </div>
         )}

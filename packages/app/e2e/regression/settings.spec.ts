@@ -485,6 +485,42 @@ test.describe("pages open before slow data", () => {
     await expect(settings.getByRole("switch", { name: "demo-mcp" })).toBeChecked()
   })
 
+  test("extensions show failed and auth-gated MCPs as links", async ({ page, context }) => {
+    const error = "Connection closed: MCP server process exited with code 1"
+    const signIns: string[] = []
+    await context.route("https://auth.example.test/**", (route) => route.fulfill({ body: "Sign in" }))
+
+    const { settings } = await open(page, {
+      mcp: [
+        { name: "blender", status: { status: "failed", error } },
+        { name: "demo-mcp", status: { status: "connected" } },
+        { name: "stripe", integrationID: "stripe-oauth", status: { status: "needs_auth", error: "Sign in required" } },
+      ],
+      integrations: [
+        { id: "stripe-oauth", name: "Stripe", methods: [{ id: "oauth", type: "oauth" }], connections: [] },
+      ],
+      onIntegrationOAuth: (input) => {
+        signIns.push(input.integrationID)
+
+        return { url: "https://auth.example.test/authorize" }
+      },
+    })
+
+    await settings.getByRole("tab", { name: "Extensions", exact: true }).click()
+    await settings.getByRole("tab", { name: "MCPs", exact: true }).click()
+    await expect(settings.getByRole("switch", { name: "demo-mcp" })).toBeChecked()
+    await expect(settings.getByRole("switch")).toHaveCount(1)
+
+    const popup = page.waitForEvent("popup")
+    await settings.getByRole("button", { name: "Sign in to stripe", exact: true }).click()
+    await expect(await popup).toHaveURL("https://auth.example.test/authorize")
+    expect(signIns).toEqual(["stripe-oauth"])
+
+    await settings.getByRole("button", { name: "blender failed, view error", exact: true }).click()
+    const details = page.getByRole("dialog", { name: "MCP server: blender", exact: true })
+    await expect(details.getByText(error, { exact: true })).toBeVisible()
+  })
+
   for (const fails of [false, true]) {
     test(`about ${fails ? "keeps its fallback when contributors fail" : "updates contributors later"}`, async ({
       page,
