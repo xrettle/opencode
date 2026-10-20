@@ -419,7 +419,7 @@ test("summary catalogs load, refresh while cached, and tell errors from empty", 
   await expect(menu("LSP").getByText("rust", { exact: true })).toHaveCount(0)
   await expect(menu("LSP").locator(".session-service-dot")).toHaveCount(0)
   await open("MCP")
-  await expect(menu("MCP").getByText("summary-mcp", { exact: true })).toBeVisible()
+  await expect(menu("MCP").locator('[data-slot="truncated-text-label"]').filter({ hasText: "summary-mcp" })).toBeVisible()
 
   for (const service of [
     { name: "MCP", path: "/api/mcp", item: "summary-mcp" },
@@ -475,10 +475,11 @@ test("every MCP row hit area toggles exactly once and keeps the submenu open", a
   const toggle = submenu.getByRole("switch", { name: "figma", exact: true })
 
   const row = submenu
-    .locator('[data-component="switch"]')
+    .locator(".session-mcp-row")
     .filter({ has: page.getByRole("switch", { name: "figma", exact: true }) })
 
   await expect(toggle).toBeChecked()
+  await expect(row.getByText("Connected", { exact: true })).toBeVisible()
   // A pointer open focuses the menu itself, so its first row shows no focus ring; a keyboard open focuses that row.
   await expect(submenu).toBeFocused()
   await page.keyboard.press("Escape")
@@ -492,7 +493,7 @@ test("every MCP row hit area toggles exactly once and keeps the submenu open", a
     const enabled = index % 2 !== 0
     await expect(toggle).toBeEnabled()
 
-    if (target === "label") await row.getByText("figma", { exact: true }).click()
+    if (target === "label") await row.locator('[data-slot="truncated-text-label"]').click()
 
     if (target === "dot") await row.locator(".session-service-dot").click()
 
@@ -502,6 +503,7 @@ test("every MCP row hit area toggles exactly once and keeps the submenu open", a
 
     if (target === "keyboard") await toggle.press("Space")
     await expect(toggle).toBeChecked({ checked: enabled })
+    await expect(row.getByText(enabled ? "Connected" : "Disabled", { exact: true })).toBeVisible()
     await expect(toggle).toBeEnabled()
     await expect(submenu).toBeVisible()
 
@@ -548,7 +550,7 @@ test("MCP authentication starts before a slow resource catalog finishes", async 
 
   try {
     const popup = page.waitForEvent("popup")
-    await submenu.getByText("linear", { exact: true }).click()
+    await submenu.locator('[data-slot="truncated-text-label"]').filter({ hasText: "linear" }).click()
     await expect(await popup).toHaveURL("https://auth.example.test/authorize")
     await resources.arrived
     // The switch hands over to the sign-in link, which waits for the catalog before it is ready again.
@@ -732,10 +734,10 @@ async function expectRefreshKeeps(page: Page, name: string, path: string, conten
   await summary.getByRole("button", { name, exact: true }).click()
   await refresh.arrived
   await expect(menu).toHaveAttribute("aria-busy", "true")
-  await expect(menu.getByText(content, { exact: true })).toBeVisible()
+  await expect(menu.getByText(content, { exact: true }).filter({ visible: true })).toBeVisible()
   await expect(menu.getByRole("status")).toHaveCount(0)
   await expect(summary).toBeVisible()
   refresh.release()
   await expect(menu).toHaveAttribute("aria-busy", "false")
-  await expect(menu.getByText(content, { exact: true })).toBeVisible()
+  await expect(menu.getByText(content, { exact: true }).filter({ visible: true })).toBeVisible()
 }

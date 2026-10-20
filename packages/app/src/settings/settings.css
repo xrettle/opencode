@@ -2147,6 +2147,18 @@
   line-height: var(--line-height-compact);
 }
 
+.settings-mcp-row .settings-extension-trailing {
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.settings-mcp-row {
+  min-height: 56px;
+  gap: 16px;
+}
+
 .settings-extension-lead {
   display: flex;
   flex: 1;

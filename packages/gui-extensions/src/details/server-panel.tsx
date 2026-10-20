@@ -4,10 +4,10 @@ import { Button } from "@opencode/ui/button"
 import { Dialog, DialogBody, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { ErrorDetails } from "@opencode/ui/error-details"
 import { Icon } from "@opencode/ui/icon"
-import { StatusLink } from "@opencode/ui/status-link"
 import { Switch } from "@opencode/ui/switch"
 import { showToast } from "@opencode/ui/toast"
 import { Tooltip } from "@opencode/ui/tooltip"
+import { TruncatedText } from "@opencode/ui/truncated-text"
 import { getDirectory } from "@opencode/util/path"
 import { useMutation } from "@tanstack/solid-query"
 import {
@@ -221,16 +221,10 @@ function McpMenu(props: ServiceMenuProps) {
           {(server) => {
             const enabled = () => server().status.status !== "disabled"
             const pending = () => toggle.isPending || server().status.status === "pending"
-            // Like the MCPs dialog, a failed or auth-gated server shows its follow-up where the switch would be.
+            // Status stays beside its control rather than competing with a long server name.
             const failed = () => server().status.status === "failed"
             const signIn = () => server().status.status === "needs_auth" && !!server().integrationID
             const busy = () => toggle.isPending && toggle.variables?.name === server().name
-
-            const error = () => {
-              const status = server().status
-
-              return status.status === "failed" ? status.error : undefined
-            }
 
             const label = () => {
               const status = server().status.status
@@ -239,7 +233,7 @@ function McpMenu(props: ServiceMenuProps) {
 
               if (status === "needs_auth") return ctx.t("needsAuth")
 
-              return undefined
+              return ctx.t(status === "connected" ? "mcp.connected" : "mcp.disabled")
             }
 
             const change = (value: boolean) => {
@@ -249,90 +243,51 @@ function McpMenu(props: ServiceMenuProps) {
 
             const follow = () => {
               if (failed()) return showError(server().name)
-              change(true)
+              change(server().status.status === "needs_auth" || !enabled())
             }
 
             return (
-              <Show
-                when={failed() || signIn()}
-                fallback={
-                  <Switch
-                    class="session-mcp-row [&_[data-slot=switch-description]]:sr-only"
-                    description={label()}
-                    checked={enabled()}
-                    readOnly={pending()}
-                    aria-disabled={pending()}
-                    aria-busy={toggle.isPending}
-                    onChange={change}
-                    onClick={(event: MouseEvent) => {
-                      if (
-                        !(event.target instanceof Element) ||
-                        event.target.closest('[data-slot="switch-control"], [data-slot="switch-input"]')
-                      )
-                        return
-
-                      // Outside the switch itself, a row that requires sign-in starts sign-in instead of toggling.
-                      if (server().status.status === "needs_auth") {
-                        event.preventDefault()
-
-                        return change(true)
-                      }
-
-                      if (event.target === event.currentTarget) change(!enabled())
-                    }}
-                    title={error() ?? server().name}
-                  >
-                    <span class="session-service-dot" data-status={server().status.status} aria-hidden="true" />
-                    <span dir="auto" class="session-summary-label">
-                      {server().name}
-                    </span>
-                    <Show when={label()}>
-                      {(status) => (
-                        <span class="session-service-status" aria-hidden="true">
-                          {status()}
-                        </span>
-                      )}
-                    </Show>
-                  </Switch>
-                }
-              >
-                <div
-                  class="session-mcp-row"
-                  onClick={(event) => {
-                    if (event.target instanceof Element && event.target.closest('[data-component="status-link"]'))
-                      return
-                    follow()
-                  }}
-                >
-                  <span class="session-service-dot" data-status={server().status.status} aria-hidden="true" />
-                  <span dir="auto" class="session-summary-label">
-                    {server().name}
-                  </span>
-                  <span class="session-mcp-trailing">
-                    <Show
-                      when={failed()}
-                      fallback={
-                        <StatusLink
-                          tone="accent"
-                          busy={busy()}
-                          aria-label={ctx.t("mcp.signIn.open", { name: server().name })}
-                          onClick={follow}
-                        >
-                          {ctx.t("mcp.signIn")}
-                        </StatusLink>
-                      }
-                    >
-                      <StatusLink
-                        tone="danger"
-                        aria-label={ctx.t("mcp.error.open", { name: server().name })}
-                        onClick={follow}
+              <div class="session-mcp-row" data-disabled={pending() || undefined} onClick={follow}>
+                <span class="session-service-dot" data-status={server().status.status} aria-hidden="true" />
+                <TruncatedText text={server().name} class="session-summary-label" />
+                <span class="session-mcp-trailing" onClick={(event) => event.stopPropagation()}>
+                  <Show
+                    when={failed() || signIn()}
+                    fallback={
+                      <Switch
+                        checked={enabled()}
+                        readOnly={pending()}
+                        aria-disabled={pending()}
+                        aria-busy={busy()}
+                        description={server().status.status === "pending" ? label() : undefined}
+                        class="[&_[data-slot=switch-description]]:sr-only"
+                        onChange={change}
                       >
-                        {ctx.t("failed")}
-                      </StatusLink>
+                        <span class="sr-only">{server().name}</span>
+                        <span aria-hidden="true">{label()}</span>
+                      </Switch>
+                    }
+                  >
+                    <Show when={failed()}>
+                      <span class="session-mcp-failed">{ctx.t("failed")}</span>
                     </Show>
-                  </span>
-                </div>
-              </Show>
+                    <Button
+                      size="small"
+                      variant="neutral"
+                      disabled={signIn() && pending()}
+                      aria-busy={busy()}
+                      aria-label={ctx.t(failed() ? "mcp.error.actionLabel" : "mcp.signIn.open", {
+                        name: server().name,
+                      })}
+                      onClick={follow}
+                    >
+                      <Show when={failed()} fallback={ctx.t(busy() ? "mcp.signingIn" : "mcp.signIn")}>
+                        {ctx.t("mcp.error.action")}
+                      </Show>
+                    </Button>
+                  </Show>
+                </span>
+              </div>
             )
           }}
         </Index>
@@ -462,6 +417,7 @@ function ServicePopover(props: ServiceMenuProps & ServiceBodyProps & { empty: bo
   const placement = createMemo(() =>
     props.mobile ? "top-end" : locale.direction() === "rtl" ? "right-start" : "left-start",
   )
+
   // How the trigger last opened the menu: a keyboard open moves focus to the first row, a pointer open does not.
   const opening = { pointer: false }
 
@@ -771,18 +727,26 @@ function McpErrorDialog(props: { session: MountedSession; directory: string; nam
       {(current) => (
         <Dialog class="session-mcp-error">
           <DialogHeader>
-            <DialogTitleGroup title={ctx.t("mcp.error.title", { name: current().name })} />
+            <DialogTitleGroup
+              title={
+                <span dir="auto" class="[overflow-wrap:anywhere]">
+                  {current().name}
+                </span>
+              }
+              description={ctx.t("mcp.error.status")}
+            />
           </DialogHeader>
           <DialogBody class="session-mcp-error-body">
             <ErrorDetails error={current().error}>
               <Button
-                variant="ghost"
+                class="error-details-copy"
+                variant="ghost-muted"
                 icon={copied() ? "check" : "copy"}
                 onClick={() =>
                   void ctx.system
                     .copy(ctx.t("mcp.error.details", { name: current().name, error: current().error }))
                     .then(() => setCopied(true))
-                    .catch((error: unknown) =>
+                    .catch((error) =>
                       showToast({
                         variant: "error",
                         title: ctx.t("mcp.error.copyFailed"),
