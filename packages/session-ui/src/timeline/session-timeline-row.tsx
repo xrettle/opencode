@@ -633,7 +633,7 @@ export function createSessionTimelineRowRenderer(input: {
                               <Icon
                                 name={outcomeNoticeIcon(outcome())}
                                 size="normal"
-                                class={`inline-block align-top me-2 ${outcomeNoticeColor(outcome())}`}
+                                class={`inline-block align-top me-1.5 ${outcomeNoticeColor(outcome())}`}
                               />
                             )}
                           </Show>
@@ -1064,7 +1064,7 @@ function outcomeNoticeIcon(outcome: Outcome) {
 
   if (outcome === "cancelled") return "circle-ban-sign"
 
-  return "circle-check"
+  return "check"
 }
 
 function outcomeNoticeColor(outcome: Outcome | undefined) {
@@ -1074,7 +1074,7 @@ function outcomeNoticeColor(outcome: Outcome | undefined) {
 
   if (outcome === "cancelled") return "text-v2-state-fg-warning"
 
-  return "text-v2-state-fg-info"
+  return "text-v2-text-text-code-accent"
 }
 
 function outcomeNoticeKey(state: string | undefined) {
