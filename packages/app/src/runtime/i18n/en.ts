@@ -11,6 +11,7 @@ export const dict = {
   "session.location.moveFailed": "Failed to move session",
   "server.action.authenticate": "Authenticate",
   "server.status.connecting": "Connecting over SSH…",
+  "server.thisComputer": "This computer",
   "server.status.authentication": "Authentication required",
   "command.category.suggested": "Suggested",
   "command.category.view": "View",

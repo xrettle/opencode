@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Alege un fișier",
   "desktop.dialog.saveFile": "Salvează fișierul",
   "desktop.dialog.files": "Fișiere",
-  "desktop.server.local": "Server local",
   "desktop.picker.error.notSelected": "Fișierul nu a fost selectat din selector",
   "desktop.picker.error.sizeLimit": "Atașamentele selectate depășesc limita de {{limit}} MB",
   "command.category.suggested": "Sugerat",

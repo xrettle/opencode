@@ -557,7 +557,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "파일 선택",
   "desktop.dialog.saveFile": "파일 저장",
   "desktop.dialog.files": "파일",
-  "desktop.server.local": "로컬 서버",
 
   "desktop.picker.error.notSelected": "선택기에서 파일을 선택하지 않았습니다",
   "desktop.picker.error.sizeLimit": "선택한 첨부 파일이 {{limit}} MB 제한을 초과합니다",

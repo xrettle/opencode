@@ -61,7 +61,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ފައިލެއް ހޮވާށެވެ",
   "desktop.dialog.saveFile": "ފައިލް ސޭވްކުރުން",
   "desktop.dialog.files": "ފައިލްތައް",
-  "desktop.server.local": "ލޯކަލް ސަރވަރ އެވެ",
   "desktop.picker.error.notSelected": "ފައިލް ހޮވާފައިވަނީ ޕިކަރ އިން ނޫނެވެ",
   "desktop.picker.error.sizeLimit": "ހޮވާލެވޭ އެޓޭޗްމަންޓްތައް \u2068{{limit}}\u2069 MB ލިމިޓަށްވުރެ މަތިވެއެވެ",
   "command.category.suggested": "ލަފާދީފިއެވެ",

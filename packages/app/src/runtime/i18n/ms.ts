@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Pilih fail",
   "desktop.dialog.saveFile": "Simpan fail",
   "desktop.dialog.files": "Fail",
-  "desktop.server.local": "Pelayan Tempatan",
   "desktop.picker.error.notSelected": "Fail tidak dipilih oleh pemilih",
   "desktop.picker.error.sizeLimit": "Lampiran yang dipilih melebihi had {{limit}} MB",
   "command.category.suggested": "Dicadangkan",

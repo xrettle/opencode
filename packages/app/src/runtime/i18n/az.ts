@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Fayl seçin",
   "desktop.dialog.saveFile": "Faylı saxla",
   "desktop.dialog.files": "Fayllar",
-  "desktop.server.local": "Yerli server",
   "desktop.picker.error.notSelected": "Seçim vasitəsində fayl seçilməyib",
   "desktop.picker.error.sizeLimit": "Seçilmiş əlavələr {{limit}} MB limitini aşır",
   "command.category.suggested": "Təklif olunan",

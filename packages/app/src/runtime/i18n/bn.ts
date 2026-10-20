@@ -63,7 +63,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "একটি ফাইল নির্বাচন করুন",
   "desktop.dialog.saveFile": "ফাইল সংরক্ষণ করুন",
   "desktop.dialog.files": "ফাইল",
-  "desktop.server.local": "স্থানীয় সার্ভার",
   "desktop.picker.error.notSelected": "ফাইল পিকার দ্বারা নির্বাচন করা হয়নি",
   "desktop.picker.error.sizeLimit": "নির্বাচিত সংযুক্তিগুলি {{limit}} MB সীমা অতিক্রম করেছে৷",
   "command.category.suggested": "প্রস্তাবিত",

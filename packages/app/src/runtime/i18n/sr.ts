@@ -72,7 +72,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Изаберите датотеку",
   "desktop.dialog.saveFile": "Сачувај датотеку",
   "desktop.dialog.files": "датотеке",
-  "desktop.server.local": "Локални сервер",
   "desktop.picker.error.notSelected": "Бирач није изабрао датотеку",
   "desktop.picker.error.sizeLimit": "Изабрани прилози премашују ограничење од {{limit}} МБ",
   "command.category.suggested": "Предложено",

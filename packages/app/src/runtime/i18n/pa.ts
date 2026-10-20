@@ -62,7 +62,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "فائل چنو",
   "desktop.dialog.saveFile": "فائل محفوظ کرو",
   "desktop.dialog.files": "فائلاں",
-  "desktop.server.local": "مقامی سرور",
 
   "desktop.picker.error.notSelected": "چونکار ولوں فائل نئیں چنی گئی",
   "desktop.picker.error.sizeLimit": "چنیاں منسلک فائلاں \u2068{{limit}}\u2069 MB دی حد توں ودھ نیں",

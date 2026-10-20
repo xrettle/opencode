@@ -87,7 +87,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Виберіть файл",
   "desktop.dialog.saveFile": "Зберегти файл",
   "desktop.dialog.files": "Файли",
-  "desktop.server.local": "Локальний сервер",
 
   "desktop.picker.error.notSelected": "Засіб вибору не повернув вибраний файл",
   "desktop.picker.error.sizeLimit": "Вибрані вкладення перевищують обмеження в {{limit}} МБ",

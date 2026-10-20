@@ -60,7 +60,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Chọn tệp",
   "desktop.dialog.saveFile": "Lưu tệp",
   "desktop.dialog.files": "Tệp",
-  "desktop.server.local": "Máy chủ cục bộ",
 
   "desktop.picker.error.notSelected": "Không có tệp nào được chọn trong bộ chọn tệp",
   "desktop.picker.error.sizeLimit": "Các tệp đính kèm đã chọn vượt quá giới hạn {{limit}} MB",

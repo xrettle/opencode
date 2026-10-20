@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ជ្រើសរើសឯកសារ",
   "desktop.dialog.saveFile": "រក្សាទុកឯកសារ",
   "desktop.dialog.files": "ឯកសារ",
-  "desktop.server.local": "ម៉ាស៊ីនមេក្នុងស្រុក",
   "desktop.picker.error.notSelected": "ឯកសារមិនត្រូវបានជ្រើសរើសដោយអ្នកជ្រើសរើសទេ។",
   "desktop.picker.error.sizeLimit": "ឯកសារភ្ជាប់ដែលបានជ្រើសរើសលើសពីដែនកំណត់ {{limit}} MB",
   "command.category.suggested": "បានស្នើ",

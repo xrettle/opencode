@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Ընտրեք ֆայլ",
   "desktop.dialog.saveFile": "Պահպանել ֆայլը",
   "desktop.dialog.files": "Ֆայլեր",
-  "desktop.server.local": "Տեղական սերվեր",
   "desktop.picker.error.notSelected": "Ֆայլը ընտրողի կողմից ընտրված չէ",
   "desktop.picker.error.sizeLimit": "Ընտրված հավելվածները գերազանցում են {{limit}} ՄԲ սահմանաչափը",
   "command.category.suggested": "Առաջարկված",

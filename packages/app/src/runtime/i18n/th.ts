@@ -60,7 +60,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "เลือกไฟล์",
   "desktop.dialog.saveFile": "บันทึกไฟล์",
   "desktop.dialog.files": "ไฟล์",
-  "desktop.server.local": "เซิร์ฟเวอร์ภายในเครื่อง",
 
   "desktop.picker.error.notSelected": "ไม่ได้เลือกไฟล์จากตัวเลือกไฟล์",
   "desktop.picker.error.sizeLimit": "ไฟล์แนบที่เลือกมีขนาดเกินขีดจำกัด {{limit}} MB",

@@ -84,7 +84,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Izberite datoteko",
   "desktop.dialog.saveFile": "Shrani datoteko",
   "desktop.dialog.files": "Datoteke",
-  "desktop.server.local": "Lokalni strežnik",
   "desktop.picker.error.notSelected": "Izbirnik ni izbral datoteke",
   "desktop.picker.error.sizeLimit": "Izbrane priloge presegajo omejitev {{limit}} MB",
   "command.category.suggested": "Predlagano",

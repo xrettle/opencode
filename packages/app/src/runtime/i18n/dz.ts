@@ -69,7 +69,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ཡིག་སྣོད་གདམ་ཁ་རྐྱབས།",
   "desktop.dialog.saveFile": "ཡིག་སྣོད་སྲུངས།",
   "desktop.dialog.files": "ཡིག་སྣོད་ཚུ།",
-  "desktop.server.local": "ཉེ་གནས་སར་བར།",
   "desktop.picker.error.notSelected": "ཡིག་སྣོད་འདི་ སེལ་འཐུ་འབད་མི་གིས་ སེལ་འཐུ་མ་འབད་བས།",
   "desktop.picker.error.sizeLimit": "སེལ་འཐུ་འབད་ཡོད་པའི་མཉམ་སྦྲགས་ཚུ་གིས་ {{limit}} ཨེམ་བི་ཚད་ལས་བརྒལཝ་ཨིན།",
   "command.category.suggested": "བསམ་འཆར།",

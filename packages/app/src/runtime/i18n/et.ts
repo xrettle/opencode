@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Valige fail",
   "desktop.dialog.saveFile": "Salvesta fail",
   "desktop.dialog.files": "Failid",
-  "desktop.server.local": "Kohalik server",
   "desktop.picker.error.notSelected": "Valija ei valinud faili",
   "desktop.picker.error.sizeLimit": "Valitud manused ületavad {{limit}} MB piirangut",
   "command.category.suggested": "Soovitatud",

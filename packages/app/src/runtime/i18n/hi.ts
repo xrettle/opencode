@@ -61,7 +61,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "फ़ाइल चुनें",
   "desktop.dialog.saveFile": "फ़ाइल सहेजें",
   "desktop.dialog.files": "फ़ाइलें",
-  "desktop.server.local": "स्थानीय सर्वर",
 
   "desktop.picker.error.notSelected": "पिकर में फ़ाइल नहीं चुनी गई",
   "desktop.picker.error.sizeLimit": "चुने गए अटैचमेंट {{limit}} MB की सीमा से अधिक हैं",

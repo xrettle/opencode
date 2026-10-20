@@ -63,7 +63,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "एउटा फाइल छान्नुहोस्",
   "desktop.dialog.saveFile": "फाइल बचत गर्नुहोस्",
   "desktop.dialog.files": "फाइलहरू",
-  "desktop.server.local": "स्थानीय सर्भर",
   "desktop.picker.error.notSelected": "फाइल चयनकर्ता द्वारा चयन गरिएको थिएन",
   "desktop.picker.error.sizeLimit": "चयन गरिएका संलग्नहरू {{limit}} MB सीमा नाघ्छन्",
   "command.category.suggested": "सिफारिस गर्नुभयो",

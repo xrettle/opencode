@@ -62,7 +62,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ගොනුවක් තෝරන්න",
   "desktop.dialog.saveFile": "ගොනුව සුරකින්න",
   "desktop.dialog.files": "ගොනු",
-  "desktop.server.local": "දේශීය සේවාදායකය",
   "desktop.picker.error.notSelected": "ගොනුව තෝරන්නා විසින් තෝරාගෙන නොමැත",
   "desktop.picker.error.sizeLimit": "තෝරාගත් ඇමුණුම් {{limit}} MB සීමාව ඉක්මවයි",
   "command.category.suggested": "යෝජනා කර ඇත",

@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Файлро интихоб кунед",
   "desktop.dialog.saveFile": "Файлро захира кунед",
   "desktop.dialog.files": "Файлҳо",
-  "desktop.server.local": "Сервери маҳаллӣ",
   "desktop.picker.error.notSelected": "Файлро интихобкунанда интихоб накардааст",
   "desktop.picker.error.sizeLimit": "Замимаҳои интихобшуда аз ҳадди {{limit}} МБ зиёданд",
   "command.category.suggested": "Тавсия дода мешавад",

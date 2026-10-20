@@ -84,7 +84,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Vyberte súbor",
   "desktop.dialog.saveFile": "Uložiť súbor",
   "desktop.dialog.files": "Súbory",
-  "desktop.server.local": "Lokálny server",
   "desktop.picker.error.notSelected": "Súbor nebol vybraný v dialógu",
   "desktop.picker.error.sizeLimit": "Vybrané prílohy presahujú limit {{limit}} MB",
   "command.category.suggested": "Navrhované",

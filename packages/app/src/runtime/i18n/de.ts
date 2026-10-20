@@ -768,7 +768,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Datei auswählen",
   "desktop.dialog.saveFile": "Datei speichern",
   "desktop.dialog.files": "Dateien",
-  "desktop.server.local": "Lokaler Server",
   "desktop.picker.error.notSelected": "Im Auswahldialog wurde keine Datei ausgewählt",
   "desktop.picker.error.sizeLimit": "Die ausgewählten Anhänge überschreiten das Limit von {{limit}} MB",
   "command.logs.export": "Protokolle exportieren",

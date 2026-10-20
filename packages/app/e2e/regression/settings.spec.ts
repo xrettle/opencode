@@ -112,7 +112,7 @@ test("another server's settings page survives refresh", async ({ page }) => {
 })
 
 test("single-server settings expose scoped pages without a server picker", async ({ page }) => {
-  const { settings } = await open(page)
+  const { settings } = await open(page, { hostname: "hailmary" })
   await expect(settings.getByRole("tab", { name: "Server", exact: true })).toBeVisible()
   await expect(settings.getByRole("tab", { name: "Servers", exact: true })).toHaveCount(0)
 
@@ -120,6 +120,7 @@ test("single-server settings expose scoped pages without a server picker", async
     await settings.getByRole("tab", { name, exact: true }).click()
     await expect(settings.getByRole("tab", { name, exact: true })).toHaveAttribute("aria-selected", "true")
     await expect(settings.locator('[data-action="settings-server-select"]')).toHaveCount(0)
+    await expect(settings.getByText(/hailmary|This computer|Local server/i)).toHaveCount(0)
   }
 
   await settings.getByRole("tab", { name: "Server", exact: true }).click()
@@ -153,14 +154,16 @@ test("several servers share one selected server across per-server pages", async 
       { url: offline, name: "Offline box" },
     ],
   })
-  const { settings } = await open(page)
+  const { settings } = await open(page, { hostname: "hailmary" })
   const switcher = settings.locator('[data-action="settings-server-select"]:visible')
   const connected = settings.locator('[data-component="connected-providers-section"]')
 
   await settings.getByRole("tab", { name: "Providers", exact: true }).click()
-  await expect(switcher).toHaveText("Server127.0.0.1:4096")
+  // The server the app runs beside is named by its hostname; only the menu that chooses a server adds "This computer".
+  await expect(switcher).toHaveText("Serverhailmary")
   await expect(connected.getByText("No connected providers")).toBeVisible()
   await switcher.click()
+  await expect(page.getByRole("menuitemradio")).toHaveText(["hailmary· This computer", "Build server", /^Offline box/])
   await page.getByRole("menuitemradio", { name: "Build server", exact: true }).click()
   await expect(connected.getByText("OpenRouter", { exact: true })).toBeVisible()
   await expect(page).toHaveURL(

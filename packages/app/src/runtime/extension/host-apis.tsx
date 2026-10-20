@@ -34,7 +34,7 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { same } from "@/runtime/persistence/equality"
 import { Persist, persisted, removePersisted } from "@/runtime/persistence/storage"
 import { useGlobal, type ServerCtx } from "@/runtime/server/runtime"
-import { ServerConnection, serverName, useServers } from "@/runtime/server/registry"
+import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useDirectoryPicker } from "@/workspaces/selection/picker"
 import { SessionRouteKey, SessionStateKey, type ServerScope } from "@/runtime/server/scope"
 import { findSessionTab, tabKey, useTabs } from "@/shell/tabs/tabs"
@@ -413,7 +413,7 @@ export function createExtensionAttachment(apis: HostApis) {
     const ref: ServerRef = {
       id,
       get name() {
-        return serverName(listed()) || id
+        return servers.label(listed()) || id
       },
       get url() {
         return live().sdk.url

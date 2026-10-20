@@ -61,7 +61,6 @@ export const dict = {
   "desktop.dialog.saveFile": "Simpan berkas",
   "desktop.dialog.files": "Berkas",
 
-  "desktop.server.local": "Server lokal",
 
   "desktop.picker.error.notSelected": "Berkas tidak dipilih melalui pemilih",
   "desktop.picker.error.sizeLimit": "Lampiran yang dipilih melebihi batas {{limit}} MB",

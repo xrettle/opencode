@@ -64,7 +64,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "选择文件",
   "desktop.dialog.saveFile": "保存文件",
   "desktop.dialog.files": "文件",
-  "desktop.server.local": "本地服务器",
 
   "desktop.picker.error.notSelected": "文件选择器未选择文件",
   "desktop.picker.error.sizeLimit": "所选附件超过 {{limit}} MB 的限制",

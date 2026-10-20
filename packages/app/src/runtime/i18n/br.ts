@@ -276,7 +276,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Escolher um arquivo",
   "desktop.dialog.saveFile": "Salvar arquivo",
   "desktop.dialog.files": "Arquivos",
-  "desktop.server.local": "Servidor local",
 
   "desktop.picker.error.notSelected": "O arquivo não foi selecionado pelo seletor",
   "desktop.picker.error.sizeLimit": "Os anexos selecionados excedem o limite de {{limit}} MB",

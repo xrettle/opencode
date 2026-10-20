@@ -60,7 +60,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "اختيار ملف",
   "desktop.dialog.saveFile": "حفظ الملف",
   "desktop.dialog.files": "الملفات",
-  "desktop.server.local": "الخادم المحلي",
 
   "desktop.picker.error.notSelected": "لم يحدد منتقي الملفات ملفًا",
   "desktop.picker.error.sizeLimit": "تتجاوز المرفقات المحددة الحد البالغ {{limit}} MB",

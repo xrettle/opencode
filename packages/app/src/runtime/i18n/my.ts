@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ဖိုင်တစ်ခုကို ရွေးပါ။",
   "desktop.dialog.saveFile": "ဖိုင်ကို သိမ်းဆည်းပါ။",
   "desktop.dialog.files": "ဖိုင်များ",
-  "desktop.server.local": "ပြည်တွင်းဆာဗာ",
   "desktop.picker.error.notSelected": "ဖိုင်ကို ရွေးချယ်သူမှ ရွေးချယ်မထားပါ။",
   "desktop.picker.error.sizeLimit": "ရွေးချယ်ထားသော ပူးတွဲပါဖိုင်များသည် {{limit}} MB ကန့်သတ်ချက်ထက် ကျော်လွန်ပါသည်။",
   "command.category.suggested": "အကြံပြုထားသည်။",

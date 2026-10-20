@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "აირჩიე ფაილი",
   "desktop.dialog.saveFile": "ფაილის შენახვა",
   "desktop.dialog.files": "ფაილები",
-  "desktop.server.local": "ლოკალური სერვერი",
   "desktop.picker.error.notSelected": "ფაილი არ იყო არჩეული ამომრჩევლის მიერ",
   "desktop.picker.error.sizeLimit": "არჩეული დანართები აღემატება {{limit}} MB ლიმიტს",
   "command.category.suggested": "შემოთავაზებულია",

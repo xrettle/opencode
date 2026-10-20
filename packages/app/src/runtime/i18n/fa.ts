@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "یک فایل را انتخاب کنید",
   "desktop.dialog.saveFile": "ذخیره فایل",
   "desktop.dialog.files": "فایل ها",
-  "desktop.server.local": "سرور محلی",
   "desktop.picker.error.notSelected": "فایل توسط انتخاب کننده انتخاب نشده است",
   "desktop.picker.error.sizeLimit": "پیوست های انتخابی بیش از حد مجاز {{limit}} مگابایت است",
   "command.category.suggested": "پیشنهاد شده است",

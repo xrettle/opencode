@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Faýl saýlaň",
   "desktop.dialog.saveFile": "Faýly ýazdyryň",
   "desktop.dialog.files": "Faýllar",
-  "desktop.server.local": "Serli serwer",
   "desktop.picker.error.notSelected": "Faýl saýlaýjy tarapyndan saýlanmady",
   "desktop.picker.error.sizeLimit": "Saýlanan goşundylar {{limit}} MB çäginden ýokary",
   "command.category.suggested": "Teklip edilýär",

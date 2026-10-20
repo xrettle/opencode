@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Trieu un fitxer",
   "desktop.dialog.saveFile": "Desa el fitxer",
   "desktop.dialog.files": "Fitxers",
-  "desktop.server.local": "Servidor local",
   "desktop.picker.error.notSelected": "El selector no ha seleccionat el fitxer",
   "desktop.picker.error.sizeLimit": "Els fitxers adjunts seleccionats superen el límit de {{limit}} MB",
   "command.category.suggested": "Suggerit",

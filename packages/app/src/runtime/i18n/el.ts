@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Επιλογή αρχείου",
   "desktop.dialog.saveFile": "Αποθήκευση αρχείου",
   "desktop.dialog.files": "Αρχεία",
-  "desktop.server.local": "Τοπικός διακομιστής",
   "desktop.picker.error.notSelected": "Το αρχείο δεν επιλέχθηκε από τον επιλογέα",
   "desktop.picker.error.sizeLimit": "Τα επιλεγμένα συνημμένα υπερβαίνουν το όριο των {{limit}} MB",
   "command.category.suggested": "Προτεινόμενο",

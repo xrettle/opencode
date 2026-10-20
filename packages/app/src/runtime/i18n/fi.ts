@@ -744,7 +744,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Valitse tiedosto",
   "desktop.dialog.saveFile": "Tallenna tiedosto",
   "desktop.dialog.files": "Tiedostot",
-  "desktop.server.local": "Paikallinen palvelin",
   "desktop.picker.error.notSelected": "Tiedostovalitsimessa ei valittu tiedostoa",
   "desktop.picker.error.sizeLimit": "Valitut liitteet ylittävät {{limit}} Mt:n rajan",
   "command.logs.export": "Vie lokit",

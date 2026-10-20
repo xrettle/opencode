@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Vel eina fílu",
   "desktop.dialog.saveFile": "Goym fílu",
   "desktop.dialog.files": "Fílur",
-  "desktop.server.local": "Lokal ambætari",
   "desktop.picker.error.notSelected": "Fíla varð ikki vald av veljaranum",
   "desktop.picker.error.sizeLimit": "Valdar viðheftir fara upp um {{limit}} MB markið",
   "command.category.suggested": "Tillagað",

@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Izvēlieties failu",
   "desktop.dialog.saveFile": "Saglabāt failu",
   "desktop.dialog.files": "Faili",
-  "desktop.server.local": "Lokālais serveris",
   "desktop.picker.error.notSelected": "Fails netika izvēlēts ar atlasītāju",
   "desktop.picker.error.sizeLimit": "Izvēlētie pielikumi pārsniedz {{limit}} MB ierobežojumu",
   "command.category.suggested": "Ieteikts",

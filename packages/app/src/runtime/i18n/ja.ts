@@ -60,7 +60,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ファイルを選択",
   "desktop.dialog.saveFile": "ファイルを保存",
   "desktop.dialog.files": "ファイル",
-  "desktop.server.local": "ローカルサーバー",
 
   "desktop.picker.error.notSelected": "ピッカーでファイルが選択されませんでした",
   "desktop.picker.error.sizeLimit": "選択した添付ファイルが上限の{{limit}} MBを超えています",

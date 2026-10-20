@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ፋይል ምረጥ",
   "desktop.dialog.saveFile": "ፋይሉን አስቀምጥ",
   "desktop.dialog.files": "ፋይሎች",
-  "desktop.server.local": "አካባቢያዊ አገልጋይ",
   "desktop.picker.error.notSelected": "ፋይሉ በመራጭው አልተመረጠም",
   "desktop.picker.error.sizeLimit": "የተመረጡት ዓባሪዎች ከ{{limit}}ሜባ ገደቡ በላይ",
   "command.category.suggested": "የሚመከር",

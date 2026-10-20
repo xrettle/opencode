@@ -72,7 +72,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Bir dosya seçin",
   "desktop.dialog.saveFile": "Dosyayı kaydedin",
   "desktop.dialog.files": "Dosyalar",
-  "desktop.server.local": "Yerel sunucu",
 
   "desktop.picker.error.notSelected": "Dosya seçici tarafından dosya seçilmedi",
   "desktop.picker.error.sizeLimit": "Seçilen ekler {{limit}} MB sınırını aşıyor",

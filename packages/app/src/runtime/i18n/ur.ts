@@ -63,7 +63,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "فائل منتخب کریں",
   "desktop.dialog.saveFile": "فائل محفوظ کریں",
   "desktop.dialog.files": "فائلیں",
-  "desktop.server.local": "مقامی سرور",
 
   "desktop.picker.error.notSelected": "فائل چنندہ میں کوئی فائل منتخب نہیں کی گئی",
   "desktop.picker.error.sizeLimit": "منتخب منسلکات \u2068{{limit}}\u2069 MB کی حد سے زیادہ ہیں",

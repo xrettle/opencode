@@ -265,7 +265,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Kies een bestand",
   "desktop.dialog.saveFile": "Bestand opslaan",
   "desktop.dialog.files": "Bestanden",
-  "desktop.server.local": "Lokale server",
   "desktop.picker.error.notSelected": "Er is geen bestand geselecteerd in de bestandskiezer",
   "desktop.picker.error.sizeLimit": "De geselecteerde bijlagen overschrijden de limiet van {{limit}} MB",
   "command.category.suggested": "Voorgesteld",

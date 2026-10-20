@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Zgjidhni një skedar",
   "desktop.dialog.saveFile": "Ruaj skedarin",
   "desktop.dialog.files": "Skedarët",
-  "desktop.server.local": "Server lokal",
   "desktop.picker.error.notSelected": "Skedari nuk u zgjodh nga zgjedhësi",
   "desktop.picker.error.sizeLimit": "Bashkëngjitjet e zgjedhura tejkalojnë kufirin {{limit}} MB",
   "command.category.suggested": "Sugjeruar",

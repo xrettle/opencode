@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Файл сонгоно уу",
   "desktop.dialog.saveFile": "Файлыг хадгалах",
   "desktop.dialog.files": "Файлууд",
-  "desktop.server.local": "Орон нутгийн сервер",
   "desktop.picker.error.notSelected": "Файлыг сонгогч сонгоогүй",
   "desktop.picker.error.sizeLimit": "Сонгосон хавсралтууд {{limit}} МБ хязгаараас хэтэрсэн",
   "command.category.suggested": "Санал болгосон",

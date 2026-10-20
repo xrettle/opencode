@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "ເລືອກໄຟລ໌",
   "desktop.dialog.saveFile": "ບັນທຶກໄຟລ໌",
   "desktop.dialog.files": "ໄຟລ໌",
-  "desktop.server.local": "ເຊີບເວີທ້ອງຖິ່ນ",
   "desktop.picker.error.notSelected": "ໄຟລ໌ບໍ່ໄດ້ຖືກເລືອກໂດຍຕົວເລືອກ",
   "desktop.picker.error.sizeLimit": "ໄຟລ໌ແນບທີ່ເລືອກເກີນຂີດຈຳກັດ {{limit}} MB",
   "command.category.suggested": "ແນະນຳ",

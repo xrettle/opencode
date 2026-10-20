@@ -13,7 +13,7 @@ import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { displayName } from "@opencode/ui/project-avatar"
 import { useGlobal } from "@/runtime/server/runtime"
-import { ServerConnection, serverName, useServers } from "@/runtime/server/registry"
+import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useLanguage } from "@/runtime/i18n/language"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { projectSettingsKey, useSettings } from "@/settings/model"
@@ -486,6 +486,7 @@ function InboxRow(props: {
   onDelete: () => void
 }) {
   const language = useLanguage()
+  const servers = useServers()
   const project = createMemo(() => props.entry.ctx.projects.forSession(props.entry.session))
   const status = () => props.entry.status
   const unread = () => status() !== "ready" && status() !== "working"
@@ -494,8 +495,8 @@ function InboxRow(props: {
 
   const branch = () => props.entry.ctx.data.location.vcs.info(props.entry.session.location)?.branch.current ?? undefined
 
-  // Only sessions on a remote server are marked.
-  const remote = () => !props.entry.ctx.isLocal
+  // Sessions on the current server are not marked.
+  const tag = () => servers.tag(props.entry.conn)
 
   const compact = (seconds: number) => {
     if (seconds < 3600) return language.plural("sidebar.inbox.elapsed.minutes", Math.floor(seconds / 60))
@@ -587,7 +588,7 @@ function InboxRow(props: {
         >
           {sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))}
         </span>
-        <Show when={props.branchLoading || branch() || worktree() || remote()}>
+        <Show when={props.branchLoading || branch() || worktree() || tag()}>
           <span class="flex h-4 w-full min-w-0 items-center gap-1 text-[12px] leading-4 text-v2-text-text-faint">
             <Show when={props.branchLoading}>
               <span
@@ -608,10 +609,12 @@ function InboxRow(props: {
                 </Show>
               </span>
             </Show>
-            <Show when={remote()}>
-              <Tooltip placement="right" value={serverName(props.entry.conn)} class="ms-auto flex shrink-0">
-                <Icon name="server" size="small" aria-label={serverName(props.entry.conn)} />
-              </Tooltip>
+            <Show when={tag()}>
+              {(name) => (
+                <Tooltip placement="right" value={name()} class="ms-auto flex shrink-0">
+                  <Icon name="server" size="small" aria-label={name()} />
+                </Tooltip>
+              )}
             </Show>
           </span>
         </Show>

@@ -60,7 +60,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Wybierz plik",
   "desktop.dialog.saveFile": "Zapisz plik",
   "desktop.dialog.files": "Pliki",
-  "desktop.server.local": "Serwer lokalny",
 
   "desktop.picker.error.notSelected": "Nie wybrano pliku w oknie wyboru",
   "desktop.picker.error.sizeLimit": "Wybrane załączniki przekraczają limit {{limit}} MB",

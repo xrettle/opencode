@@ -259,7 +259,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Välj en fil",
   "desktop.dialog.saveFile": "Spara fil",
   "desktop.dialog.files": "Filer",
-  "desktop.server.local": "Lokal server",
   "desktop.picker.error.notSelected": "Ingen fil valdes i filväljaren",
   "desktop.picker.error.sizeLimit": "De valda bilagorna överskrider gränsen på {{limit}} MB",
   "command.category.suggested": "Föreslagna",

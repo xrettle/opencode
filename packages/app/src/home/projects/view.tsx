@@ -44,6 +44,7 @@ export type HomeProjectsViewProps = {
   projects: LocalProject[]
   selection: HomeProjectSelection
   serverHealth: (server: ServerConnection.Any) => ServerHealth | undefined
+  serverLabel: (server: ServerConnection.Any) => string
   projectsForServer: (server: ServerConnection.Any) => LocalProject[]
   collapsed: (server: ServerConnection.Any) => boolean
   canRevealProject: (server: ServerConnection.Any) => boolean
@@ -104,7 +105,7 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
             <Show when={props.servers.length > 1 && server()}>
               {(server) => (
                 <bdi class="truncate text-v2-text-text-muted opacity-70">
-                  {server().displayName ?? new URL(server().http.url).host}
+                  {props.serverLabel(server())}
                 </bdi>
               )}
             </Show>
@@ -333,6 +334,7 @@ export function HomeUtilityNav(props: {
 
 function HomeServerRow(props: {
   language: HomeProjectsViewProps["language"]
+  serverLabel: HomeProjectsViewProps["serverLabel"]
   projectsForServer: HomeProjectsViewProps["projectsForServer"]
   contextMenuOpen: HomeProjectsContextMenuProps["contextMenuOpen"]
   onFocusServer: HomeProjectsViewProps["onFocusServer"]
@@ -427,9 +429,7 @@ function HomeServerRow(props: {
             class="flex min-w-0 flex-1 items-center gap-1"
             classList={{ "opacity-60": !healthy() && !incompatible() }}
           >
-            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-              {props.server.displayName ?? new URL(props.server.http.url).host}
-            </span>
+            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{props.serverLabel(props.server)}</span>
             <Show when={props.server.label}>
               {(label) => (
                 <span

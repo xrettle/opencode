@@ -59,7 +59,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Faylni tanlang",
   "desktop.dialog.saveFile": "Faylni saqlash",
   "desktop.dialog.files": "Fayllar",
-  "desktop.server.local": "Mahalliy server",
   "desktop.picker.error.notSelected": "Fayl tanlovchi tomonidan tanlanmagan",
   "desktop.picker.error.sizeLimit": "Tanlangan biriktirmalar {{limit}} MB chegarasidan oshib ketadi",
   "command.category.suggested": "Tavsiya etilgan",

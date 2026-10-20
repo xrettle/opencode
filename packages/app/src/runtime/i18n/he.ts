@@ -58,7 +58,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "בחר קובץ",
   "desktop.dialog.saveFile": "שמור קובץ",
   "desktop.dialog.files": "קבצים",
-  "desktop.server.local": "שרת מקומי",
   "desktop.picker.error.notSelected": "לא נבחר קובץ",
   "desktop.picker.error.sizeLimit": "הקבצים המצורפים שנבחרו חורגים ממגבלת ה-{{limit}} MB",
   "command.category.suggested": "מוצע",

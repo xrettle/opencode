@@ -260,7 +260,6 @@ export const dict = {
   "desktop.dialog.chooseFile": "Velg en fil",
   "desktop.dialog.saveFile": "Lagre fil",
   "desktop.dialog.files": "Filer",
-  "desktop.server.local": "Lokal server",
 
   "desktop.picker.error.notSelected": "Ingen fil ble valgt i filvelgeren",
   "desktop.picker.error.sizeLimit": "De valgte vedleggene overskrider grensen på {{limit}} MB",
