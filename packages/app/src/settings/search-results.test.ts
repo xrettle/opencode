@@ -73,6 +73,10 @@ describe("settings search index", () => {
         .map((item) => item.page),
     ).toEqual(["Desktop notifications", "Sound effects"])
     expect(rankSettings("follow-up behavior", items)[0].page).toBe("Preferences / General")
+    expect(rankSettings("capsule", items)[0].view).toMatchObject({
+      tab: "general",
+      target: "settings-background-activity",
+    })
     expect(items.some((item) => item.view.target === "settings-project-startup")).toBe(false)
   })
 

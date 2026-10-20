@@ -2,8 +2,9 @@ import { Icon } from "@opencode/ui/icon"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Menu } from "@opencode/ui/menu"
 import { SessionProgressIndicatorV2 } from "@opencode/session-ui/v2/session-progress-indicator-v2"
-import { createEffect, createSignal, For, onCleanup, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
+import { useSettings } from "@/settings/model"
 import "./activity-chips.css"
 
 export type SessionActivityItem = {
@@ -50,9 +51,17 @@ export function SessionActivityChips(props: {
   onStop: (item: SessionActivityItem) => void
 }) {
   const language = useLanguage()
+  const settings = useSettings()
+  const active = () =>
+    settings.general.backgroundActivity() !== "off" && (props.subagents.length > 0 || props.shells.length > 0)
+  const alignment = createMemo(() => {
+    const value = settings.general.backgroundActivity()
+    if (value === "center") return "center"
 
-  // With one kind running, the capsule row already names it.
-  const both = () => props.subagents.length > 0 && props.shells.length > 0
+    // Left/right are physical positions; Kobalte and flex alignment use logical start/end.
+    return (value === "left") !== (language.direction() === "rtl") ? "start" : "end"
+  })
+  const placement = () => (alignment() === "center" ? "top" : alignment() === "end" ? "top-end" : "top-start")
 
   // A subagent can only be interrupted once its child session exists.
   const stoppable = (item: SessionActivityItem) => item.type === "shell" || !!item.sessionID
@@ -72,7 +81,7 @@ export function SessionActivityChips(props: {
   const [open, setOpen] = createSignal(false)
   const [now, setNow] = createSignal(Date.now())
   createEffect(() => {
-    if (!open()) return
+    if (!open() || !active()) return
 
     setNow(Date.now())
     const timer = setInterval(() => setNow(Date.now()), 1000)
@@ -84,7 +93,8 @@ export function SessionActivityChips(props: {
     <span data-slot="session-activity-end">
       <span
         data-slot="session-activity-elapsed"
-        class="text-[12px] tabular-nums whitespace-nowrap text-v2-text-text-muted"
+        dir="auto"
+        class="text-[11px] tabular-nums whitespace-nowrap text-v2-text-text-muted"
       >
         {formatElapsed(now() - item.started, language.t)}
       </span>
@@ -101,7 +111,7 @@ export function SessionActivityChips(props: {
         variant="ghost-muted"
         tabIndex={-1}
         data-slot="session-activity-stop"
-        icon={<Icon name="outline-xmark" />}
+        icon={<Icon name="outline-xmark" size="small" />}
         aria-label={language.t(item.type === "shell" ? "session.running.stop.shell" : "session.running.stop.subagent")}
         onPointerDown={(event) => {
           event.preventDefault()
@@ -117,78 +127,92 @@ export function SessionActivityChips(props: {
   )
 
   const label = () => language.activitySummary({ subagents: props.subagents.length, shells: props.shells.length })
-  const active = () => props.subagents.length > 0 || props.shells.length > 0
 
   // Each session mounts its own composer, so a capsule that is already there on a switch stays at rest; only work
   // that starts while the session is open fades in.
   const [enter, setEnter] = createSignal(!active())
   createEffect(() => {
-    if (!active()) setEnter(true)
+    if (active()) return
+    setEnter(true)
+    setOpen(false)
   })
 
   return (
     <Show when={active()}>
       <div
         data-component="session-activity-chips"
-        class="pointer-events-none absolute inset-x-0 bottom-full flex items-center pb-2"
+        class="pointer-events-none absolute inset-x-0 bottom-full flex items-center pb-2.5"
+        classList={{
+          "justify-start": alignment() === "start",
+          "justify-center": alignment() === "center",
+          "justify-end": alignment() === "end",
+        }}
       >
-        <Menu gutter={6} placement="top-start" onOpenChange={setOpen}>
+        <Menu gutter={8} placement={placement()} onOpenChange={setOpen}>
           <Menu.Trigger
             as="button"
             type="button"
             data-slot="session-activity-chip"
-            class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-1.5 rounded-full border border-v2-border-border-base bg-v2-background-bg-base ps-2 pe-2.5 text-[13px] font-[530] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out motion-reduce:animate-none hover:bg-v2-background-bg-layer-01 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus"
+            aria-label={label()}
+            class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[13px] font-[530] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out motion-reduce:animate-none hover:bg-v2-background-bg-layer-01 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-focus"
             classList={{ "animate-in fade-in": enter() }}
           >
             <SessionProgressIndicatorV2 class="shrink-0" />
-            <span class="truncate">{label()}</span>
+            <span data-slot="session-activity-summary" class="flex min-w-0 items-center gap-2 overflow-hidden">
+              {language.activitySummaryRich(
+                { subagents: props.subagents.length, shells: props.shells.length },
+                (text) => (
+                  <span class="truncate">
+                    <bdi>{text}</bdi>
+                  </span>
+                ),
+              )}
+            </span>
           </Menu.Trigger>
           <Menu.Portal>
-            <Menu.Content data-slot="session-activity-panel" aria-label={label()}>
-              <Show when={props.subagents.length > 0}>
-                <Menu.Group>
-                  <Show when={both()}>
-                    <Menu.GroupLabel>{language.t("session.activity.section.subagents")}</Menu.GroupLabel>
-                  </Show>
-                  <For each={props.subagents}>
-                    {(item) => (
-                      <Menu.Item {...row(item)}>
-                        <SessionProgressIndicatorV2 class="shrink-0 text-v2-icon-icon-muted" />
-                        <span class="shrink-0 font-[530]">
-                          {item.agent
-                            ? `${item.agent[0].toUpperCase()}${item.agent.slice(1)}`
-                            : language.t("ui.tool.agent.default")}
-                        </span>
-                        <span dir="auto" class="min-w-0 flex-1 truncate text-v2-text-text-muted">
-                          {item.label}
-                        </span>
-                        {end(item)}
-                      </Menu.Item>
-                    )}
-                  </For>
-                </Menu.Group>
-              </Show>
-              <Show when={both()}>
-                <Menu.Separator />
-              </Show>
-              <Show when={props.shells.length > 0}>
-                <Menu.Group>
-                  <Show when={both()}>
-                    <Menu.GroupLabel>{language.t("session.activity.section.shells")}</Menu.GroupLabel>
-                  </Show>
-                  <For each={props.shells}>
-                    {(item) => (
-                      <Menu.Item {...row(item)}>
-                        <Icon name="console" class="shrink-0 text-v2-icon-icon-muted" />
-                        <span dir="ltr" class="min-w-0 flex-1 truncate font-mono text-[13px] tracking-[-0.04px] text-v2-text-text-base">
-                          {item.label}
-                        </span>
-                        {end(item)}
-                      </Menu.Item>
-                    )}
-                  </For>
-                </Menu.Group>
-              </Show>
+            <Menu.Content
+              data-slot="session-activity-panel"
+              aria-label={label()}
+              onFocusIn={(event: FocusEvent) => {
+                if (!(event.target instanceof HTMLElement)) return
+                const row = event.target.closest<HTMLElement>('[data-component="menu-v2-item"]')
+                if (!row) return
+                // Kobalte's scroll adjustment ignores scroll-padding; native scrolling keeps the ring clear of the edge.
+                queueMicrotask(() => row.scrollIntoView({ block: "nearest", inline: "nearest" }))
+              }}
+            >
+              <For each={props.subagents}>
+                {(item) => (
+                  <Menu.Item {...row(item)}>
+                    <SessionProgressIndicatorV2 class="shrink-0 text-v2-icon-icon-muted" />
+                    <span class="shrink-0 font-[530]">
+                      <bdi>
+                        {item.agent
+                          ? `${item.agent[0].toUpperCase()}${item.agent.slice(1)}`
+                          : language.t("ui.tool.agent.default")}
+                      </bdi>
+                    </span>
+                    <span dir="auto" class="min-w-0 flex-1 truncate text-v2-text-text-muted">
+                      {item.label}
+                    </span>
+                    {end(item)}
+                  </Menu.Item>
+                )}
+              </For>
+              <For each={props.shells}>
+                {(item) => (
+                  <Menu.Item {...row(item)}>
+                    <Icon name="console" class="shrink-0 text-v2-icon-icon-muted" />
+                    <span
+                      dir="ltr"
+                      class="min-w-0 flex-1 truncate font-mono text-[13px] tracking-[-0.04px] text-v2-text-text-base"
+                    >
+                      {item.label}
+                    </span>
+                    {end(item)}
+                  </Menu.Item>
+                )}
+              </For>
             </Menu.Content>
           </Menu.Portal>
         </Menu>

@@ -1,24 +1,54 @@
+[data-color-scheme="dark"] [data-slot="session-activity-chip"] {
+  background: var(--v2-background-bg-layer-01);
+}
+
+[data-slot="session-activity-summary"] {
+  color: var(--v2-text-text-faint);
+
+  > .truncate {
+    color: var(--v2-text-text-base);
+  }
+}
+
 /*
- * The open panel sits just above the capsule, left edges aligned, with its rows on the capsule's grid:
- * 1px border + 8px padding puts glyphs at x=9; a 16px glyph + 6px gap puts text at x=31.
+ * The open panel sits just above the capsule, with their inline-start edges aligned.
  */
 [data-component="menu-v2-content"][data-slot="session-activity-panel"] {
   width: max-content;
   min-width: max(var(--kb-popper-anchor-width, 0px), 240px);
-  max-width: min(360px, calc(100vw - 24px));
+  max-width: min(360px, calc(100vw - 56px));
+  max-height: min(270px, var(--kb-popper-content-available-height, 270px));
+  overflow-y: auto;
   padding: 4px;
-  border: 1px solid var(--v2-border-border-base);
-  border-radius: 14px;
-  background: var(--v2-background-bg-base);
+  scroll-padding-block: 4px;
+  border: none;
+  border-radius: 10px;
+  background: var(--v2-background-bg-layer-01);
+  text-align: start;
+
+  /* Match the queue panel's inset-ring pattern inside a clipped scrollport. */
+  :is([data-component="menu-v2-item"], [data-component="icon-button-v2"]):is(:focus-visible, [data-state="focus"]) {
+    outline: 2px solid var(--v2-border-border-focus);
+    outline-offset: -2px;
+  }
+
+  [data-slot="menu-v2-item-content"] > span[dir] {
+    text-align: match-parent;
+    unicode-bidi: isolate;
+  }
+
+  [data-slot="session-activity-elapsed"] {
+    unicode-bidi: isolate;
+  }
 
   /* Every row ends with its run time, 4px in, mirroring the glyph inset at the start. */
   [data-component="menu-v2-item"] {
     padding-inline: 4px;
-    border-radius: 10px;
+    border-radius: 4px;
   }
 
   [data-slot="menu-v2-item-content"] {
-    gap: 6px;
+    gap: calc(var(--spacing) * 2);
   }
 
   [data-slot="menu-v2-item-content"] > svg:first-child {
@@ -60,6 +90,15 @@
 
   /* Without hover, the stop button stays visible and the run time sits before it. */
   @media (hover: none) {
+    [data-component="menu-v2-item"] {
+      min-height: 44px;
+    }
+
+    [data-slot="session-activity-stop"] {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
     [data-slot="session-activity-end"] {
       display: flex;
       gap: 2px;
@@ -72,17 +111,13 @@
     }
   }
 
-  [data-slot="menu-v2-group-label"] {
-    height: 24px;
-    padding-inline: 4px;
-  }
-
-  [data-slot="menu-v2-separator"] {
-    width: calc(100% + 8px);
-    margin: 4px -4px;
-  }
-
   :root[data-motion="reduce"] & {
     animation: none;
+  }
+}
+
+@media (hover: none) {
+  [data-slot="session-activity-chip"] {
+    min-height: 44px;
   }
 }

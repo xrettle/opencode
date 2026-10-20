@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import type { ConfigEntry, OpenCodeEvent, WorktreeDirectory } from "@opencode/client/promise"
+import type { ConfigEntry, OpenCodeEvent, SessionMessageInfo, WorktreeDirectory } from "@opencode/client/promise"
 import { NO_PROVIDER, REMOTE_SERVER, SERVER, holdRoute, project, seed, session } from "../utils/app"
 import { mockMissingLocation, mockOpenCodeServer } from "../utils/mock-server"
 import { mockRemoteServer, mockWorkspace, openSession, openSettings, type WorkspaceInput } from "../utils/workspace"
@@ -93,6 +93,143 @@ test("a settings page survives refresh", async ({ page }) => {
   await expect(appearance).toHaveAttribute("aria-selected", "true")
   await expect(page).toHaveURL("/settings?tab=appearance")
 })
+
+for (const locale of ["en", "ar"]) {
+  test(`background activity alignment stays physical and persists (${locale})`, async ({ page }) => {
+    const id = "ses_activity_settings"
+    const childID = "ses_activity_settings_child"
+    const stopped: string[] = []
+    page.on("request", (request) => {
+      if (request.method() === "POST" && new URL(request.url()).pathname.endsWith("/interrupt"))
+        stopped.push(request.url())
+      if (request.method() === "DELETE" && new URL(request.url()).pathname.startsWith("/api/shell/"))
+        stopped.push(request.url())
+    })
+    await openSession(page, {
+      name: "Activity settings",
+      sessions: [
+        { id, title: "Activity settings" },
+        { id: childID, parentID: id, title: "Inspect capsule" },
+      ],
+      sessionStatus: { [id]: { type: "busy" }, [childID]: { type: "busy" } },
+      seed: { locale },
+      pageMessages: (): { items: SessionMessageInfo[] } => ({
+        items: [
+          { id: "msg_activity_user", type: "user", text: "Inspect the activity capsule", time: { created: 1 } },
+          {
+            id: "msg_activity_assistant",
+            type: "assistant",
+            agent: "build",
+            model: { id: "model", providerID: "provider" },
+            content: [
+              {
+                type: "tool",
+                id: "call_activity_child",
+                name: "subagent",
+                state: {
+                  status: "running",
+                  input: { agent: "explore", description: "Inspect capsule" },
+                  metadata: { sessionID: childID },
+                },
+                time: { created: 2 },
+              },
+              {
+                type: "tool",
+                id: "call_activity_shell",
+                name: "shell",
+                state: {
+                  status: "completed",
+                  input: { command: "sleep 120" },
+                  content: [{ type: "text", text: "working" }],
+                  metadata: { shellID: "shell_activity_settings", status: "running" },
+                },
+                time: { created: 2, completed: 3 },
+              },
+            ],
+            time: { created: 2 },
+          },
+        ],
+      }),
+      shellCommands: [
+        {
+          id: "shell_activity_settings",
+          status: "running",
+          command: "sleep 120",
+          cwd: "C:/OpenCode/Activity settings",
+          shell: "bash",
+          file: "/tmp/activity.out",
+          metadata: { sessionID: id },
+          time: { started: 2 },
+        },
+      ],
+    })
+    const capsule = page.locator('[data-slot="session-activity-chip"]')
+    const panel = page.locator('[data-slot="session-activity-panel"]')
+    await expect(capsule).toBeVisible()
+    await expect(page.locator("html")).toHaveAttribute("dir", locale === "ar" ? "rtl" : "ltr")
+
+    for (const value of ["Center", "Right", "Hidden", "Left", "Right"]) {
+      await page.keyboard.press("Control+,")
+      const settings = page.getByTestId("settings-screen")
+      const control = settings.getByLabel("Background activity", { exact: true })
+      await expect(control).toBeVisible()
+      await control.click()
+      const options = page.getByRole("listbox")
+      await expect(options.getByRole("option")).toHaveText(["Hidden", "Left", "Center", "Right"])
+      await options.getByRole("option", { name: value, exact: true }).click()
+      await expect(control).toHaveText(value)
+      await page.goBack()
+      if (value === "Hidden") {
+        await expect(capsule).toHaveCount(0)
+        await expect(panel).toHaveCount(0)
+        continue
+      }
+      await expect(capsule).toBeVisible()
+      await expect
+        .poll(async () => {
+          const anchor = await capsule.boundingBox()
+          const container = await page.locator('[data-component="session-activity-chips"]').boundingBox()
+          if (!anchor || !container) return Infinity
+          return Math.abs(
+            value === "Center"
+              ? anchor.x + anchor.width / 2 - container.x - container.width / 2
+              : value === "Left"
+                ? anchor.x - container.x
+                : anchor.x + anchor.width - container.x - container.width,
+          )
+        })
+        .toBeLessThan(1)
+      await capsule.click()
+      await expect(panel.getByRole("menuitem")).toHaveCount(2)
+      await expect
+        .poll(async () => {
+          const anchor = await capsule.boundingBox()
+          const bounds = await panel.boundingBox()
+          if (!anchor || !bounds) return Infinity
+          return Math.abs(
+            value === "Center"
+              ? anchor.x + anchor.width / 2 - bounds.x - bounds.width / 2
+              : value === "Left"
+                ? anchor.x - bounds.x
+                : anchor.x + anchor.width - bounds.x - bounds.width,
+          )
+        })
+        .toBeLessThan(1)
+      await page.keyboard.press("Escape")
+    }
+    expect(stopped).toEqual([])
+    await expect
+      .poll(() =>
+        page.evaluate(() => JSON.parse(localStorage.getItem("settings.v3") ?? "{}").general?.backgroundActivity),
+      )
+      .toBe("right")
+    await page.keyboard.press("Control+,")
+    await page.reload()
+    await expect(page.getByTestId("settings-screen").getByLabel("Background activity", { exact: true })).toHaveText(
+      "Right",
+    )
+  })
+}
 
 test("another server's settings page survives refresh", async ({ page }) => {
   await mockRemoteServer(page, { directory: "/remote/settings-demo" })

@@ -16,6 +16,8 @@ export type WorkspaceLastUsed = Settings["workspaces"]["lastUsed"][string]
 
 export type FollowUpBehavior = Settings["general"]["followUpBehavior"]
 
+export type BackgroundActivity = Settings["general"]["backgroundActivity"]
+
 export type TabLayout = Settings["appearance"]["tabLayout"]
 
 export type ReduceMotion = Settings["appearance"]["reduceMotion"]
@@ -119,6 +121,7 @@ const generalSchema = Persistence.struct({
   }),
   showCustomAgents: Schema.Boolean,
   showTurnDiffs: Schema.Boolean,
+  backgroundActivity: Schema.Literals(["off", "left", "center", "right"]),
   // Lets agents render generated UI in the timeline; an experiment users can turn off.
   generatedUI: Schema.Boolean,
   mobileTitlebarPosition: Schema.Literals(["top", "bottom"]),
@@ -287,6 +290,7 @@ export const defaultSettings: Settings = {
     timelineDetail: { ...timelinePresets[2].value },
     showCustomAgents: false,
     showTurnDiffs: false,
+    backgroundActivity: "left",
     generatedUI: true,
     mobileTitlebarPosition: "top",
     followUpBehavior: "steer",
@@ -374,6 +378,13 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         showTurnDiffs: withFallback(() => store.general?.showTurnDiffs, defaultSettings.general.showTurnDiffs),
         setShowTurnDiffs(value: boolean) {
           setStore("general", "showTurnDiffs", value)
+        },
+        backgroundActivity: withFallback(
+          () => store.general?.backgroundActivity,
+          defaultSettings.general.backgroundActivity,
+        ),
+        setBackgroundActivity(value: BackgroundActivity) {
+          setStore("general", "backgroundActivity", value)
         },
         generatedUI: withFallback(() => store.general?.generatedUI, defaultSettings.general.generatedUI),
         setGeneratedUI(value: boolean) {

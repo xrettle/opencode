@@ -6,7 +6,12 @@ import { TimelineDetailControl } from "@/settings/timeline-detail"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ExtensionSettingsSections } from "@/runtime/extension/settings-page-view"
-import { type FollowUpBehavior, type WorkspaceDefaultDestination, useSettings } from "@/settings/model"
+import {
+  type BackgroundActivity,
+  type FollowUpBehavior,
+  type WorkspaceDefaultDestination,
+  useSettings,
+} from "@/settings/model"
 import { formatKeybind } from "@/shell/commands/command"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
@@ -126,6 +131,36 @@ const FollowUpBehaviorSetting: Component = () => {
         placement="bottom-end"
         gutter={6}
         onSelect={(option) => option && settings.general.setFollowUpBehavior(option.value)}
+      />
+    </SettingsRow>
+  )
+}
+
+const BackgroundActivitySetting = () => {
+  const language = useLanguage()
+  const settings = useSettings()
+  const options = createMemo((): { value: BackgroundActivity; label: string }[] => [
+    { value: "off", label: language.t("settings.timeline.row.backgroundActivity.off") },
+    { value: "left", label: language.t("settings.timeline.row.backgroundActivity.left") },
+    { value: "center", label: language.t("settings.timeline.row.backgroundActivity.center") },
+    { value: "right", label: language.t("settings.timeline.row.backgroundActivity.right") },
+  ])
+
+  return (
+    <SettingsRow
+      title={language.t("settings.timeline.row.backgroundActivity.title")}
+      description={language.t("settings.timeline.row.backgroundActivity.description")}
+    >
+      <Select
+        data-action="settings-background-activity"
+        aria-label={language.t("settings.timeline.row.backgroundActivity.title")}
+        options={options()}
+        current={options().find((option) => option.value === settings.general.backgroundActivity())}
+        value={(option) => option.value}
+        label={(option) => option.label}
+        placement="bottom-end"
+        gutter={6}
+        onSelect={(option) => option && settings.general.setBackgroundActivity(option.value)}
       />
     </SettingsRow>
   )
@@ -259,6 +294,7 @@ export const SettingsGeneral: Component = () => {
                 onChange={settings.general.setTimelineDetail}
               />
             </div>
+            <BackgroundActivitySetting />
             <SettingsRow
               title={language.t("settings.timeline.row.turnDiffs.title")}
               description={language.t("settings.timeline.row.turnDiffs.description")}

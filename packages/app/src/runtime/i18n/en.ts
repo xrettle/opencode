@@ -861,6 +861,12 @@ export const dict = {
   "settings.general.section.sounds": "Sound effects",
 
   "settings.timeline.title": "Timeline",
+  "settings.timeline.row.backgroundActivity.title": "Background activity",
+  "settings.timeline.row.backgroundActivity.description": "Show running subagents and shells above the composer",
+  "settings.timeline.row.backgroundActivity.off": "Hidden",
+  "settings.timeline.row.backgroundActivity.left": "Left",
+  "settings.timeline.row.backgroundActivity.center": "Center",
+  "settings.timeline.row.backgroundActivity.right": "Right",
   "settings.timeline.detail": "Timeline detail",
   "settings.timeline.description": "Choose how much detail appears in the session timeline.",
   "settings.timeline.summary": "{{preset}}:",

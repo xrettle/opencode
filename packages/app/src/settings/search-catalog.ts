@@ -70,6 +70,14 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
   },
   {
     tab: "general",
+    label: "settings.timeline.row.backgroundActivity.title",
+    description: "settings.timeline.row.backgroundActivity.description",
+    target: "settings-background-activity",
+    section: "settings.timeline.title",
+    keywords: "capsule panel subagent shell background activity position alignment hidden left center right",
+  },
+  {
+    tab: "general",
     label: "settings.general.row.showCustomAgents.title",
     target: "settings-show-custom-agents",
     section: "settings.general.section.general",

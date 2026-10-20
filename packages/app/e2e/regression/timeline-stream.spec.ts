@@ -1058,12 +1058,16 @@ test.describe("background shortcut", () => {
     const label = capsule.getByText("2 subagents · 1 shell", { exact: true })
     const glyph = await capsule.locator("svg").boundingBox()
     const text = await label.boundingBox()
+    const border = await capsule.evaluate((element) =>
+      Number.parseFloat(getComputedStyle(element).borderInlineStartWidth),
+    )
 
     await activity.click()
+    await expect(list.locator('[data-slot="menu-v2-group-label"], [data-slot="menu-v2-separator"]')).toHaveCount(0)
     await expect(list.getByText("2 subagents · 1 shell", { exact: true })).toHaveCount(0)
     await expect(label).toBeVisible()
 
-    // The panel opens just above the capsule, without covering it, and its rows sit on the capsule's columns.
+    // The panel opens above the capsule; its rows have 2px less start padding and no outer border.
     await expect
       .poll(async () => {
         const panel = await list.boundingBox()
@@ -1083,7 +1087,10 @@ test.describe("background shortcut", () => {
         return (
           panel!.y + panel!.height <= anchor!.y &&
           rows.length === 3 &&
-          rows.every(([left, start]) => Math.abs(left - glyph!.x) < 0.5 && Math.abs(start - text!.x) < 0.5)
+          rows.every(
+            ([left, start]) =>
+              Math.abs(left + 2 + border - glyph!.x) < 0.5 && Math.abs(start + 2 + border - text!.x) < 0.5,
+          )
         )
       })
       .toBe(true)
