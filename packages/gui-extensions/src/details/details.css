@@ -254,32 +254,29 @@
   color: var(--icon-warning-base);
 }
 
-[data-component="switch"].session-mcp-row [data-slot="switch-label"] {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-  height: auto;
-  align-self: stretch;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-}
-/* Every row ends in the same 60px slot as the MCPs dialog, so switches and status links line up. */
 .session-mcp-trailing {
   display: flex;
-  min-width: 60px;
   flex-shrink: 0;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+  margin-inline-start: 8px;
+  white-space: nowrap;
 }
 
-[data-component="switch"].session-mcp-row [data-slot="switch-control"] {
-  margin-inline-start: 36px;
+.session-mcp-failed {
+  color: var(--v2-state-fg-danger);
 }
 
 div.session-mcp-row {
   cursor: pointer;
+}
+
+@media (max-width: 639px), (hover: none) {
+  .session-mcp-row {
+    min-height: 44px;
+    padding-block: 8px;
+  }
 }
 
 .session-mcp-error-body {

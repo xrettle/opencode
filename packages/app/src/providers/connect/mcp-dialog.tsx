@@ -8,9 +8,9 @@ import { useFilteredList } from "@opencode/ui/hooks"
 import { Icon } from "@opencode/ui/icon"
 import { ScrollView } from "@opencode/ui/scroll-view"
 import { ErrorDetails } from "@opencode/ui/error-details"
-import { StatusLink } from "@opencode/ui/status-link"
 import { Switch } from "@opencode/ui/switch"
 import { TextInput } from "@opencode/ui/text-input"
+import { TruncatedText } from "@opencode/ui/truncated-text"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useMcpToggle } from "@/providers/connect/mcp"
 import { usePlatform } from "@/runtime/platform/platform"
@@ -102,7 +102,7 @@ export const DialogMcp: Component<{ directory: string; server?: string }> = (pro
 
     return (platform.writeClipboardText?.(details) ?? navigator.clipboard.writeText(details))
       .then(() => setStore("copied", true))
-      .catch((error: unknown) =>
+      .catch((error) =>
         showToast({
           variant: "error",
           title: language.t("dialog.mcp.error.copyFailed"),
@@ -151,7 +151,7 @@ export const DialogMcp: Component<{ directory: string; server?: string }> = (pro
   }
 
   return (
-    <Dialog class="search-list-dialog">
+    <Dialog class="search-list-dialog mcp-dialog">
       <Show
         when={failure()}
         fallback={
@@ -235,16 +235,9 @@ export const DialogMcp: Component<{ directory: string; server?: string }> = (pro
                             onClick={() => select(item.name)}
                           >
                             <div class="search-list-row-text">
-                              <span class="search-list-title">{item.name}</span>
-                              <Show when={detail()}>
-                                <span class="search-list-detail">{detail()}</span>
-                              </Show>
+                              <TruncatedText text={item.name} class="search-list-title" />
                             </div>
-                            {/* Sized for the failed and sign-in links so every row's text truncates at the same edge. */}
-                            <div
-                              class="search-list-trailing min-w-15 justify-end"
-                              onClick={(event) => event.stopPropagation()}
-                            >
+                            <div class="search-list-trailing mcp-trailing" onClick={(event) => event.stopPropagation()}>
                               <Show
                                 when={status()?.status === "failed"}
                                 fallback={
@@ -255,27 +248,34 @@ export const DialogMcp: Component<{ directory: string; server?: string }> = (pro
                                         checked={status()?.status === "connected"}
                                         disabled={status()?.status === "pending" || busy()}
                                         onChange={() => toggleServer(item.name)}
-                                      />
+                                      >
+                                        <span class="sr-only">{item.name}</span>
+                                        <span aria-hidden="true">{detail()}</span>
+                                      </Switch>
                                     }
                                   >
-                                    <StatusLink
-                                      tone="accent"
-                                      busy={busy()}
+                                    <Button
+                                      size="small"
+                                      variant="neutral"
+                                      disabled={busy()}
+                                      aria-busy={busy()}
                                       aria-label={language.t("dialog.mcp.signIn.open", { name: item.name })}
                                       onClick={() => toggleServer(item.name)}
                                     >
-                                      {language.t("dialog.mcp.signIn")}
-                                    </StatusLink>
+                                      {language.t(busy() ? "dialog.mcp.signingIn" : "dialog.mcp.signIn")}
+                                    </Button>
                                   </Show>
                                 }
                               >
-                                <StatusLink
-                                  tone="danger"
-                                  aria-label={language.t("dialog.mcp.error.open", { name: item.name })}
+                                <span class="text-v2-state-fg-danger">{language.t("mcp.status.failed")}</span>
+                                <Button
+                                  size="small"
+                                  variant="neutral"
+                                  aria-label={language.t("dialog.mcp.error.actionLabel", { name: item.name })}
                                   onClick={() => select(item.name)}
                                 >
-                                  {language.t("mcp.status.failed")}
-                                </StatusLink>
+                                  {language.t("dialog.mcp.error.action")}
+                                </Button>
                               </Show>
                             </div>
                           </div>
@@ -293,7 +293,7 @@ export const DialogMcp: Component<{ directory: string; server?: string }> = (pro
           // Escape steps back to the list, like the TUI, instead of closing the dialog.
           <div class="contents" data-owns-escape onKeyDown={onDetailKeyDown}>
             <DialogHeader>
-              <div class="flex min-w-0 flex-1 items-start gap-2">
+              <div class="mcp-error-heading">
                 <button
                   ref={backRef}
                   type="button"
@@ -304,12 +304,24 @@ export const DialogMcp: Component<{ directory: string; server?: string }> = (pro
                 >
                   <Icon name="arrow-left" size="small" />
                 </button>
-                <DialogTitleGroup title={language.t("dialog.mcp.error.title", { name: current().name })} />
+                <DialogTitleGroup
+                  title={
+                    <span dir="auto" class="[overflow-wrap:anywhere]">
+                      {current().name}
+                    </span>
+                  }
+                  description={language.t("dialog.mcp.error.status")}
+                />
               </div>
             </DialogHeader>
             <DialogBody class="search-list-body">
               <ErrorDetails error={current().error}>
-                <Button variant="ghost" icon={store.copied ? "check" : "copy"} onClick={() => void copy(current())}>
+                <Button
+                  class="error-details-copy"
+                  variant="ghost-muted"
+                  icon={store.copied ? "check" : "copy"}
+                  onClick={() => void copy(current())}
+                >
                   {language.t(store.copied ? "common.copied" : "dialog.mcp.error.copy")}
                 </Button>
                 <Button

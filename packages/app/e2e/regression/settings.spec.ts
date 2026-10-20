@@ -624,7 +624,7 @@ test.describe("pages open before slow data", () => {
     await expect(settings.getByRole("switch", { name: "demo-mcp" })).toBeChecked()
   })
 
-  test("extensions show failed and auth-gated MCPs as links", async ({ page, context }) => {
+  test("extensions separate MCP status from details, sign-in, and switch controls", async ({ page, context }) => {
     const error = "Connection closed: MCP server process exited with code 1"
     const signIns: string[] = []
     await context.route("https://auth.example.test/**", (route) => route.fulfill({ body: "Sign in" }))
@@ -633,6 +633,7 @@ test.describe("pages open before slow data", () => {
       mcp: [
         { name: "blender", status: { status: "failed", error } },
         { name: "demo-mcp", status: { status: "connected" } },
+        { name: "disabled-mcp", status: { status: "disabled" } },
         { name: "stripe", integrationID: "stripe-oauth", status: { status: "needs_auth", error: "Sign in required" } },
       ],
       integrations: [
@@ -648,15 +649,25 @@ test.describe("pages open before slow data", () => {
     await settings.getByRole("tab", { name: "Extensions", exact: true }).click()
     await settings.getByRole("tab", { name: "MCPs", exact: true }).click()
     await expect(settings.getByRole("switch", { name: "demo-mcp" })).toBeChecked()
-    await expect(settings.getByRole("switch")).toHaveCount(1)
+    await expect(settings.getByRole("switch")).toHaveCount(2)
+    await expect(settings.getByText("Connected", { exact: true })).toBeVisible()
+    await expect(settings.getByText("Disabled", { exact: true })).toBeVisible()
+    await expect(settings.getByText("Failed", { exact: true })).toBeVisible()
 
     const popup = page.waitForEvent("popup")
-    await settings.getByRole("button", { name: "Sign in to stripe", exact: true }).click()
+    const signIn = settings.getByRole("button", { name: "Sign in to stripe", exact: true })
+    await expect(signIn).toHaveAttribute("data-component", "button-v2")
+    await expect(signIn.locator("svg")).toHaveCount(0)
+    await signIn.click()
     await expect(await popup).toHaveURL("https://auth.example.test/authorize")
     expect(signIns).toEqual(["stripe-oauth"])
 
-    await settings.getByRole("button", { name: "blender failed, view error", exact: true }).click()
-    const details = page.getByRole("dialog", { name: "MCP server: blender", exact: true })
+    const action = settings.getByRole("button", { name: "Details for blender", exact: true })
+    await expect(action).toHaveText("Details")
+    await expect(action).toHaveAttribute("data-component", "button-v2")
+    await action.click()
+    const details = page.getByRole("dialog", { name: "blender", exact: true })
+    await expect(details).toHaveAccessibleDescription("Connection failed")
     await expect(details.getByText(error, { exact: true })).toBeVisible()
   })
 

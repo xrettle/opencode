@@ -33,4 +33,8 @@
     justify-content: flex-end;
     gap: 8px;
   }
+
+  .error-details-copy {
+    margin-inline-end: auto;
+  }
 }

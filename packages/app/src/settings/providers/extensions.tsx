@@ -1,9 +1,10 @@
 import { Component, For, Show, createEffect, createMemo, createResource, type JSX } from "solid-js"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
-import { StatusLink } from "@opencode/ui/status-link"
+import { Button } from "@opencode/ui/button"
 import { Switch } from "@opencode/ui/switch"
 import { Tabs } from "@opencode/ui/tabs"
+import { TruncatedText } from "@opencode/ui/truncated-text"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useData } from "@/runtime/server/current"
 import { useServerSDK } from "@/runtime/server/client"
@@ -105,13 +106,22 @@ export const SettingsExtensions: Component<{
                   {(item) => {
                     const busy = () => toggleMcp.isPending && toggleMcp.variables === item.name
 
+                    const label = () => {
+                      if (item.status.status === "pending") return
+
+                      if (item.status.status === "connected") return language.t("mcp.status.connected")
+
+                      if (item.status.status === "disabled") return language.t("mcp.status.disabled")
+
+                      return language.t("mcp.status.needs_auth")
+                    }
+
                     return (
-                      <div class="settings-extension-row">
+                      <div class="settings-extension-row settings-mcp-row">
                         <div class="settings-extension-lead">
                           <Icon name="mcp" class="text-v2-icon-icon-muted shrink-0" />
-                          <span class="settings-extension-name truncate">{item.name}</span>
+                          <TruncatedText text={item.name} class="settings-extension-name" />
                         </div>
-                        {/* The same slot as the MCPs dialog, so switches and links line up. */}
                         <div class="settings-extension-trailing">
                           <Show
                             when={item.status.status === "failed"}
@@ -123,34 +133,38 @@ export const SettingsExtensions: Component<{
                                     checked={item.status.status === "connected"}
                                     disabled={item.status.status === "pending" || busy()}
                                     onChange={() => toggle(item.name)}
-                                    hideLabel
                                   >
-                                    {item.name}
+                                    <span class="sr-only">{item.name}</span>
+                                    <span aria-hidden="true">{label()}</span>
                                   </Switch>
                                 }
                               >
-                                <StatusLink
-                                  tone="accent"
-                                  busy={busy()}
+                                <Button
+                                  size="small"
+                                  variant="neutral"
+                                  disabled={busy()}
+                                  aria-busy={busy()}
                                   aria-label={language.t("dialog.mcp.signIn.open", { name: item.name })}
                                   onClick={() => toggle(item.name)}
                                 >
-                                  {language.t("dialog.mcp.signIn")}
-                                </StatusLink>
+                                  {language.t(busy() ? "dialog.mcp.signingIn" : "dialog.mcp.signIn")}
+                                </Button>
                               </Show>
                             }
                           >
-                            <StatusLink
-                              tone="danger"
-                              aria-label={language.t("dialog.mcp.error.open", { name: item.name })}
+                            <span class="text-v2-state-fg-danger">{language.t("mcp.status.failed")}</span>
+                            <Button
+                              size="small"
+                              variant="neutral"
+                              aria-label={language.t("dialog.mcp.error.actionLabel", { name: item.name })}
                               onClick={() =>
                                 dialog.show(() => (
                                   <DialogMcp directory={data.location.default().directory} server={item.name} />
                                 ))
                               }
                             >
-                              {language.t("mcp.status.failed")}
-                            </StatusLink>
+                              {language.t("dialog.mcp.error.action")}
+                            </Button>
                           </Show>
                         </div>
                       </div>
