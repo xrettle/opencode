@@ -153,14 +153,14 @@ test("keeps the active nested session visible in a narrow desktop header", async
   const separator = header.locator('[data-slot="session-title-ancestors"] + [data-slot="session-title-separator"]')
   await expect(header.locator('[data-slot="session-title-ancestor"]')).toHaveText([parentTitle, childTitle])
   await expect(heading).toBeInViewport()
-  await expect(separator).toBeInViewport()
+  await expect(separator).toBeHidden()
   const bounds = await heading.boundingBox()
   expect(bounds).not.toBeNull()
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(820)
 
   await page.evaluate(() => document.documentElement.setAttribute("dir", "rtl"))
   await expect(heading).toBeInViewport()
-  await expect(separator).toBeInViewport()
+  await expect(separator).toBeHidden()
 
   const root = header.locator(`[data-slot="session-title-ancestor"][data-session-id="${parentID}"]`)
   await root.focus()

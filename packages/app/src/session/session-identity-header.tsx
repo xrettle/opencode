@@ -8,7 +8,7 @@ import {
   ProjectAvatar,
 } from "@opencode/ui/project-avatar"
 import { useNavigate } from "@solidjs/router"
-import { createMemo, For, Show, type ComponentProps, type ParentProps } from "solid-js"
+import { createMemo, For, Show, type ComponentProps, type JSX, type ParentProps } from "solid-js"
 import { containsDirectory, getFilename } from "@opencode/util/path"
 import { useServer } from "@/runtime/server/current"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
@@ -42,9 +42,21 @@ export function SessionTitleHeader(props: ParentProps) {
       {/* Stuck timeline headers stack above this fade, so it only fades content scrolling under the bar. */}
       <div
         aria-hidden="true"
-        class="pointer-events-none sticky top-12 z-[5] -mt-4 h-4 w-full bg-[linear-gradient(to_bottom,var(--v2-background-bg-base),transparent)]"
+        class="session-header-fade pointer-events-none sticky z-[5] -mt-4 h-4 w-full bg-[linear-gradient(to_bottom,var(--v2-background-bg-base),transparent)]"
       />
     </>
+  )
+}
+
+export function SessionHeaderLayout(props: ParentProps<{ location: JSX.Element; actions?: JSX.Element }>) {
+  return (
+    <div class="session-header-layout">
+      <div class="session-header-location">{props.location}</div>
+      <div class="session-header-title">{props.children}</div>
+      <Show when={props.actions}>
+        <div class="session-header-actions">{props.actions}</div>
+      </Show>
+    </div>
   )
 }
 
@@ -163,10 +175,7 @@ export function SessionLocation(props: {
           <Show when={!props.compact && worktree()}>
             {(name) => (
               <>
-                <span
-                  class="shrink-0 ps-1 pe-0.5 text-[11px] font-medium text-v2-text-text-faint"
-                  aria-hidden="true"
-                >
+                <span class="shrink-0 ps-1 pe-0.5 text-[11px] font-medium text-v2-text-text-faint" aria-hidden="true">
                   /
                 </span>
                 <Icon name="outline-worktree" class="shrink-0 text-v2-icon-icon-muted" />
@@ -432,9 +441,9 @@ export function SessionIdentityHeader(props: { sessionID: string; session?: Sess
   return (
     <Show when={title() || parentTitle()}>
       <SessionTitleHeader>
-        <div class="flex h-12 w-full items-center justify-between gap-2">
-          <div class="flex min-w-0 flex-1 items-center gap-1">
-            <div class="flex min-w-0 w-full flex-1 items-center gap-0.5">
+        <SessionHeaderLayout
+          location={
+            <>
               <SessionLocation
                 project={project()}
                 directory={directory()}
@@ -451,22 +460,23 @@ export function SessionIdentityHeader(props: { sessionID: string; session?: Sess
                   />
                 )}
               </Show>
-              <SessionWorkingIndicator sessionID={props.sessionID} />
-              <Show when={title()}>
-                {(value) => (
-                  <h1
-                    data-slot={parentID() ? "session-title-child" : undefined}
-                    dir="auto"
-                    class="w-fit truncate rounded-[6px] px-1 py-1 text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base"
-                    classList={{ "max-w-[45%] shrink-0": !!parentID() }}
-                  >
-                    {value()}
-                  </h1>
-                )}
-              </Show>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        >
+          <SessionWorkingIndicator sessionID={props.sessionID} />
+          <Show when={title()}>
+            {(value) => (
+              <h1
+                data-slot={parentID() ? "session-title-child" : undefined}
+                dir="auto"
+                class="w-fit truncate rounded-[6px] px-1 py-1 text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base"
+                classList={{ "max-w-[45%] shrink-0": !!parentID() }}
+              >
+                {value()}
+              </h1>
+            )}
+          </Show>
+        </SessionHeaderLayout>
       </SessionTitleHeader>
     </Show>
   )
