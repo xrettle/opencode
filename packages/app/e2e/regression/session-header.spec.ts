@@ -9,6 +9,7 @@ const tabs = (page: Page) => page.locator('[data-slot="titlebar-tabs"] a')
 
 for (const direction of ["ltr", "rtl"] as const) {
   test(`session header groups controls and exposes session details in ${direction}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
     await mockStressTimeline(page)
     await seed(page, {
       tabs: [fixture.sourceID, fixture.targetID],
@@ -64,6 +65,36 @@ for (const direction of ["ltr", "rtl"] as const) {
 
     await header.getByRole("textbox").press("Escape")
     await expect(header.getByRole("heading")).toHaveText(fixture.expected.targetTitle)
+
+    for (const width of [900, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      await expect
+        .poll(async () => {
+          const [location, title, menu, summary, sidebar] = await Promise.all(
+            [project, header.getByRole("heading"), more, details, review].map((control) => control.boundingBox()),
+          )
+
+          if (!location || !title || !menu || !summary || !sidebar) return false
+          const gap = direction === "ltr" ? menu.x - title.x - title.width : title.x - menu.x - menu.width
+
+          const aligned =
+            Math.abs(menu.y + menu.height / 2 - summary.y - summary.height / 2) <= 0.5 &&
+            Math.abs(menu.y + menu.height / 2 - sidebar.y - sidebar.height / 2) <= 0.5
+
+          return (
+            Math.abs(gap - 2) <= 0.5 &&
+            aligned &&
+            (width === 900
+              ? Math.abs(location.y - menu.y - menu.height - 8) <= 0.5
+              : Math.abs(location.y + location.height / 2 - menu.y - menu.height / 2) <= 0.5)
+          )
+        })
+        .toBe(true)
+
+      const screenshot = test.info().outputPath(`header-${width}.png`)
+      await page.screenshot({ path: screenshot })
+      await test.info().attach(`header-${width}`, { path: screenshot, contentType: "image/png" })
+    }
 
     await review.click()
     await expect(review).toHaveAttribute("aria-expanded", "true")

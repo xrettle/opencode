@@ -25,7 +25,12 @@ import { isWorkspaceDirectory } from "@/workspaces/paths"
 import { parseCommentNote, readPromptPresentation } from "@/composer/comment-note"
 import { parseVoiceDelegation } from "./voice-delegation"
 import { useCommand } from "@/shell/commands/command"
-import { SessionAncestorTrail, SessionLocation, SessionTitleHeader } from "../session-identity-header"
+import {
+  SessionAncestorTrail,
+  SessionHeaderLayout,
+  SessionLocation,
+  SessionTitleHeader,
+} from "../session-identity-header"
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionWorkingIndicator } from "@/session/header/session-working-indicator"
 
@@ -451,9 +456,9 @@ function MessageTimelineView(
       header={
         <Show when={!props.hideHeader}>
           <SessionTitleHeader>
-            <div class="h-12 w-full flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1 min-w-0 flex-1">
-                <div class="flex items-center gap-0.5 min-w-0 flex-1 w-full">
+            <SessionHeaderLayout
+              location={
+                <>
                   <SessionLocation
                     project={headerProject()}
                     directory={sessionDirectory()}
@@ -470,148 +475,151 @@ function MessageTimelineView(
                       />
                     )}
                   </Show>
-                  <Show when={parentID() && childTitle()}>
-                    {(value) => (
-                      <>
-                        <SessionWorkingIndicator sessionID={sessionID()} />
-                        <h1
-                          data-slot="session-title-child"
-                          dir="auto"
-                          class="max-w-[45%] shrink-0 w-fit truncate rounded-[6px] px-1 py-1 text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base"
-                        >
-                          {value()}
-                        </h1>
-                      </>
-                    )}
-                  </Show>
-                  <Show when={!parentID() && (childTitle() || title.editing)}>
-                    <Show
-                      when={title.editing}
-                      fallback={
-                        <h1
-                          data-slot="session-title-child"
-                          class="truncate text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base w-fit rounded-[6px] px-1 py-1 hover:bg-v2-overlay-simple-overlay-hover"
-                          classList={{ "max-w-[45%] shrink-0": !!parentID() }}
-                          onClick={openTitleEditor}
-                        >
-                          {childTitle()}
-                        </h1>
-                      }
-                    >
-                      <InlineInput
-                        ref={(el) => {
-                          titleRef = el
+                </>
+              }
+              actions={
+                <Show when={sessionID()} keyed>
+                  {(_id) => (
+                    <>
+                      {props.search}
+                      <ExtensionSlot
+                        at="session.header"
+                        input={{
+                          get session() {
+                            return props.view
+                          },
+                          get screen() {
+                            return props.screen
+                          },
+                          get active() {
+                            return props.active !== false
+                          },
                         }}
-                        data-slot="session-title-child"
-                        dir="auto"
-                        value={title.draft}
-                        disabled={props.pending.rename()}
-                        class="block text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base field-sizing-content rounded-[6px] px-1 py-1"
-                        classList={{ "max-w-[45%] shrink-0": !!parentID() }}
-                        style={{
-                          "--inline-input-shadow": "none",
-                          "text-align": "start",
-                        }}
-                        onInput={(event) => setTitle("draft", event.currentTarget.value)}
-                        onKeyDown={(event) => {
-                          event.stopPropagation()
-
-                          if (event.isComposing || event.keyCode === 229) return
-
-                          if (event.key === "Enter") {
-                            event.preventDefault()
-                            void saveTitleEditor()
-
-                            return
-                          }
-
-                          if (event.key === "Escape") {
-                            event.preventDefault()
-                            closeTitleEditor()
-                          }
-                        }}
-                        onBlur={() => void saveTitleEditor()}
                       />
-                    </Show>
-                  </Show>
-                  <Show when={!parentID() && sessionID()} keyed>
-                    {(id) => (
-                      <Menu
-                        gutter={6}
-                        placement="bottom-start"
-                        open={title.menuOpen}
-                        onOpenChange={(open) => setTitle("menuOpen", open)}
-                      >
-                        <Menu.Trigger
-                          as={IconButton}
-                          icon={<Icon name="outline-dots" />}
-                          variant="ghost-muted"
-                          size="large"
-                          class="shrink-0"
-                          aria-label={language.t("common.moreOptions")}
-                          aria-expanded={title.menuOpen}
-                        />
-                        <Menu.Portal>
-                          <Menu.Content
-                            class="session-options-menu w-max"
-                            style={{ "min-width": "0" }}
-                            onCloseAutoFocus={(event) => {
-                              if (!title.pendingRename) return
-                              event.preventDefault()
-                              setTitle("pendingRename", false)
-                              openTitleEditor()
-                            }}
-                          >
-                            <Show when={!parentID()}>
-                              <Menu.Item
-                                onSelect={() => {
-                                  setTitle("pendingRename", true)
-                                  setTitle("menuOpen", false)
-                                }}
-                              >
-                                {language.t("common.rename")}
-                              </Menu.Item>
-                              <Menu.Item onSelect={() => void props.action.export(id)}>
-                                {language.t("common.export")}…
-                              </Menu.Item>
-                            </Show>
-                            <Show when={!parentID()}>
-                              {/* TODO: Need a session archive API. */}
-                              <Menu.Separator />
-                              <Menu.Item onSelect={() => props.action.showDelete(id)}>
-                                {language.t("common.delete")}…
-                              </Menu.Item>
-                            </Show>
-                          </Menu.Content>
-                        </Menu.Portal>
-                      </Menu>
-                    )}
-                  </Show>
-                </div>
-              </div>
-              <Show when={sessionID()} keyed>
-                {(_id) => (
-                  <div class="shrink-0 flex items-center gap-2">
-                    {props.search}
-                    <ExtensionSlot
-                      at="session.header"
-                      input={{
-                        get session() {
-                          return props.view
-                        },
-                        get screen() {
-                          return props.screen
-                        },
-                        get active() {
-                          return props.active !== false
-                        },
-                      }}
-                    />
-                    <SessionHeaderSpacer visible={props.reserveReviewToggle} />
-                  </div>
+                      <SessionHeaderSpacer visible={props.reserveReviewToggle} />
+                    </>
+                  )}
+                </Show>
+              }
+            >
+              <Show when={parentID() && childTitle()}>
+                {(value) => (
+                  <>
+                    <SessionWorkingIndicator sessionID={sessionID()} />
+                    <h1
+                      data-slot="session-title-child"
+                      dir="auto"
+                      class="max-w-[45%] shrink-0 w-fit truncate rounded-[6px] px-1 py-1 text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base"
+                    >
+                      {value()}
+                    </h1>
+                  </>
                 )}
               </Show>
-            </div>
+              <Show when={!parentID() && (childTitle() || title.editing)}>
+                <Show
+                  when={title.editing}
+                  fallback={
+                    <h1
+                      data-slot="session-title-child"
+                      class="truncate text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base w-fit rounded-[6px] px-1 py-1 hover:bg-v2-overlay-simple-overlay-hover"
+                      classList={{ "max-w-[45%] shrink-0": !!parentID() }}
+                      onClick={openTitleEditor}
+                    >
+                      {childTitle()}
+                    </h1>
+                  }
+                >
+                  <InlineInput
+                    ref={(el) => {
+                      titleRef = el
+                    }}
+                    data-slot="session-title-child"
+                    dir="auto"
+                    value={title.draft}
+                    disabled={props.pending.rename()}
+                    class="block text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base field-sizing-content rounded-[6px] px-1 py-1"
+                    classList={{ "max-w-[45%] shrink-0": !!parentID() }}
+                    style={{
+                      "--inline-input-shadow": "none",
+                      "text-align": "start",
+                    }}
+                    onInput={(event) => setTitle("draft", event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                      event.stopPropagation()
+
+                      if (event.isComposing || event.keyCode === 229) return
+
+                      if (event.key === "Enter") {
+                        event.preventDefault()
+                        void saveTitleEditor()
+
+                        return
+                      }
+
+                      if (event.key === "Escape") {
+                        event.preventDefault()
+                        closeTitleEditor()
+                      }
+                    }}
+                    onBlur={() => void saveTitleEditor()}
+                  />
+                </Show>
+              </Show>
+              <Show when={!parentID() && sessionID()} keyed>
+                {(id) => (
+                  <Menu
+                    gutter={6}
+                    placement="bottom-start"
+                    open={title.menuOpen}
+                    onOpenChange={(open) => setTitle("menuOpen", open)}
+                  >
+                    <Menu.Trigger
+                      as={IconButton}
+                      icon={<Icon name="outline-dots" />}
+                      variant="ghost-muted"
+                      size="large"
+                      class="shrink-0"
+                      aria-label={language.t("common.moreOptions")}
+                      aria-expanded={title.menuOpen}
+                    />
+                    <Menu.Portal>
+                      <Menu.Content
+                        class="session-options-menu w-max"
+                        style={{ "min-width": "0" }}
+                        onCloseAutoFocus={(event) => {
+                          if (!title.pendingRename) return
+                          event.preventDefault()
+                          setTitle("pendingRename", false)
+                          openTitleEditor()
+                        }}
+                      >
+                        <Show when={!parentID()}>
+                          <Menu.Item
+                            onSelect={() => {
+                              setTitle("pendingRename", true)
+                              setTitle("menuOpen", false)
+                            }}
+                          >
+                            {language.t("common.rename")}
+                          </Menu.Item>
+                          <Menu.Item onSelect={() => void props.action.export(id)}>
+                            {language.t("common.export")}…
+                          </Menu.Item>
+                        </Show>
+                        <Show when={!parentID()}>
+                          {/* TODO: Need a session archive API. */}
+                          <Menu.Separator />
+                          <Menu.Item onSelect={() => props.action.showDelete(id)}>
+                            {language.t("common.delete")}…
+                          </Menu.Item>
+                        </Show>
+                      </Menu.Content>
+                    </Menu.Portal>
+                  </Menu>
+                )}
+              </Show>
+            </SessionHeaderLayout>
           </SessionTitleHeader>
         </Show>
       }
