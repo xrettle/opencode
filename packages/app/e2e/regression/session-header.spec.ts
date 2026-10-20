@@ -153,8 +153,6 @@ test.describe("location", () => {
     await openSession(page, workspace)
     await expect(trigger(page).locator('[data-slot="session-location-project"]')).toHaveText("Location")
     await expect(trigger(page).locator('[data-slot="session-location-worktree"]')).toHaveText("quiet-falcon")
-    // The current server is never named in the breadcrumb.
-    await expect(trigger(page).locator('[data-slot="session-location-server"]')).toHaveCount(0)
     await trigger(page).click()
     const card = page.locator('[data-slot="session-location-card"]')
     await expect(card.locator('[data-slot="session-location-path"]')).toHaveText(worktree)
@@ -163,16 +161,16 @@ test.describe("location", () => {
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(worktree)
   })
 
-  test("names a session's server when it is not the current one", async ({ page }) => {
+  test("names another server only in the card, not the breadcrumb", async ({ page }) => {
     await mockWorkspace(page, { name: "Location", sessions: [] })
     await mockRemoteServer(page, {
       name: "apollo",
-      directory: "/srv/apollo/project",
+      directory: "/srv/remote/project",
       sessions: [
         {
           id: "ses_remote",
           title: "Remote session",
-          directory: "/srv/apollo/project",
+          directory: "/srv/remote/project",
           slug: "ses_remote",
           version: "dev",
           time: { created: 1, updated: 1 },
@@ -181,8 +179,10 @@ test.describe("location", () => {
     })
     await seed(page, { tabs: [{ session: "ses_remote", server: REMOTE_SERVER }] })
     await page.goto(sessionHref("ses_remote", REMOTE_SERVER))
-    await expect(trigger(page).locator('[data-slot="session-location-server"]')).toHaveText("apollo")
     await expect(trigger(page).locator('[data-slot="session-location-project"]')).toHaveText("project")
+    await expect(trigger(page)).not.toContainText("apollo")
+    await trigger(page).click()
+    await expect(page.locator('[data-slot="session-location-card"]').getByText("apollo", { exact: true })).toBeVisible()
   })
 
   test("shows the location bar under the mobile view tabs", async ({ page }) => {

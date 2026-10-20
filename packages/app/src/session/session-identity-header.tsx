@@ -49,8 +49,8 @@ export function SessionTitleHeader(props: ParentProps) {
 }
 
 /**
- * Where the session runs: the server (only when it is not the current one), the project and its worktree. Opens a card
- * with the full path and the location's actions.
+ * Where the session runs: the project and its worktree. Opens a card with the server, the full path and the location's
+ * actions.
  */
 export function SessionLocation(props: {
   project?: Omit<LocalProject, "expanded">
@@ -79,7 +79,6 @@ export function SessionLocation(props: {
     return root ? getFilename(root) : undefined
   })
 
-  const remote = () => (servers.current(server.conn) ? undefined : servers.label(server.conn))
   const git = () => !!props.project?.vcs
 
   const branch = () =>
@@ -151,19 +150,6 @@ export function SessionLocation(props: {
           data-slot="session-location-trigger"
           class="flex h-6 min-w-0 max-w-[60%] shrink items-center gap-1.5 rounded-md ps-1 pe-2 text-start text-[13px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px] text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none data-[expanded]:bg-v2-overlay-simple-overlay-hover data-[expanded]:text-v2-text-text-base"
         >
-          <Show when={!props.compact && remote()}>
-            {(name) => (
-              <>
-                <span data-slot="session-location-server" class="flex min-w-0 shrink-[10] items-center gap-1">
-                  <Icon name="server" size="small" class="shrink-0" />
-                  <bdi dir="auto" class="min-w-0 truncate">
-                    {name()}
-                  </bdi>
-                </span>
-                <Icon name="chevron-right" class="-mx-1 shrink-0 text-v2-icon-icon-faint" />
-              </>
-            )}
-          </Show>
           <ProjectAvatar
             class="shrink-0"
             aria-hidden="true"
