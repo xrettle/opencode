@@ -472,7 +472,7 @@ test("the location dialog lists every ready server's projects in one list and ta
   await page.keyboard.press("ArrowRight")
   await expect(chip).toContainText("opencode")
   await expect(chip.locator('[data-component="tag"]')).toHaveText("apollo")
-  await expect(options.locator(".command-palette-title")).toHaveText(["opencode", "opencode-beta", "New worktree"])
+  await expect(options.locator(".command-palette-title")).toHaveText(["opencode", "New worktree", "opencode-beta"])
   await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
   await page.keyboard.press("Backspace")
   await expect(search).toHaveValue("opencode")

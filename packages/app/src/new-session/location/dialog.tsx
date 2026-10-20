@@ -141,13 +141,13 @@ function NewSessionLocationDialog(props: {
 
     return [
       { id: "main", type: "workspace" as const, value: "main", directory: project.worktree },
+      { id: "create", type: "workspace" as const, value: "create", directory: project.worktree },
       ...directories.map((directory) => ({
         id: `worktree:${directory}`,
         type: "workspace" as const,
         value: directory,
         directory,
       })),
-      { id: "create", type: "workspace" as const, value: "create", directory: project.worktree },
     ].filter((entry) => matches(workspaceTitle(project, entry.value), entry.directory))
   })
 
