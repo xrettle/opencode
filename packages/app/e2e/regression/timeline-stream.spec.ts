@@ -625,7 +625,8 @@ test("shows a background subagent's outcome as its own row where it finished", a
   ])
   await expect(notice).toHaveAttribute("data-outcome", "completed")
 
-  // The outcome icon starts at the column edge like the subagent card, in a 16px box centered on the text line.
+  // The outcome icon starts at the column edge like the subagent card, in a 16px box centered on the text line and
+  // clear of the label; the exact gap is styling.
   await expect
     .poll(async () => {
       const [card, icon, label] = await Promise.all([
@@ -637,11 +638,11 @@ test("shows a background subagent's outcome as its own row where it finished", a
       return {
         inset: icon!.x - card!.x,
         size: [icon!.width, icon!.height],
-        gap: label!.x - icon!.x - icon!.width,
+        separated: label!.x - icon!.x - icon!.width > 0,
         centered: Math.abs(icon!.y + icon!.height / 2 - (label!.y + label!.height / 2)) <= 0.5,
       }
     })
-    .toEqual({ inset: 0, size: [16, 16], gap: 8, centered: true })
+    .toEqual({ inset: 0, size: [16, 16], separated: true, centered: true })
   await notice.click()
   await expect(page).toHaveURL(new RegExp(`/session/${childID}$`))
 })
