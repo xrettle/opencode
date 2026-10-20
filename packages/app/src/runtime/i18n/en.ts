@@ -601,6 +601,7 @@ export const dict = {
   "session.header.reveal.finder": "Reveal in Finder",
   "session.header.reveal.fileExplorer": "Reveal in File Explorer",
   "session.header.reveal.containingFolder": "Open containing folder",
+  "session.location.copyPath": "Copy path",
 
   "settings.tab.servers": "Servers",
   "settings.extensions.tab.plugins": "Plugins",

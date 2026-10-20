@@ -1,9 +1,9 @@
 import type { SessionMessageInfo } from "@opencode/client/promise"
 import { expect, test, type Page } from "@playwright/test"
-import { seed, sessionHref } from "../utils/app"
+import { REMOTE_SERVER, seed, sessionHref } from "../utils/app"
 import { fixture, mockStressTimeline } from "../utils/session-fixture"
 import { expectSessionTitle } from "../utils/waits"
-import { mockWorkspace, openSession } from "../utils/workspace"
+import { mockRemoteServer, mockWorkspace, openSession } from "../utils/workspace"
 
 const tabs = (page: Page) => page.locator('[data-slot="titlebar-tabs"] a')
 
@@ -17,7 +17,7 @@ for (const direction of ["ltr", "rtl"] as const) {
     await page.goto(sessionHref(fixture.targetID))
     const header = page.locator("[data-session-title]")
     const more = header.getByRole("button", { name: "More options", exact: true })
-    const project = header.getByRole("button", { name: fixture.project.name, exact: true })
+    const project = header.locator('[data-slot="session-location-trigger"]')
     const review = page.getByRole("button", { name: "Toggle review", exact: true })
     const details = header.getByRole("button", { name: "Session details", exact: true })
     await expect(header.getByRole("heading")).toHaveText(fixture.expected.targetTitle)
@@ -50,11 +50,11 @@ for (const direction of ["ltr", "rtl"] as const) {
           if (Math.abs(title.y - titleBounds.y) > 0.5 || Math.abs(title.height - titleBounds.height) > 0.5) return false
 
           return direction === "ltr"
-            ? Math.abs(title.x - icon.x - icon.width - 2) <= 0.5 &&
+            ? title.x > icon.x + icon.width &&
                 Math.abs(menu.x - title.x - title.width - 2) <= 0.5 &&
                 menu.x + menu.width <= summary.x &&
                 summary.x + summary.width <= sidebar.x
-            : Math.abs(icon.x - title.x - title.width - 2) <= 0.5 &&
+            : icon.x > title.x + title.width &&
                 Math.abs(title.x - menu.x - menu.width - 2) <= 0.5 &&
                 sidebar.x + sidebar.width <= summary.x &&
                 summary.x + summary.width <= menu.x
@@ -135,6 +135,67 @@ for (const direction of ["ltr", "rtl"] as const) {
     await expect(mcp).toBeHidden()
   })
 }
+
+test.describe("location", () => {
+  const root = "C:/OpenCode/Location"
+  const worktree = "C:/OpenCode/Worktrees/location/quiet-falcon"
+  const trigger = (page: Page) => page.locator('[data-slot="session-location-trigger"]')
+
+  const workspace = {
+    name: "Location",
+    directory: root,
+    project: { sandboxes: [worktree] },
+    sessions: [{ id: "ses_location", title: "Location session", directory: worktree }],
+  }
+
+  test("names the project and worktree, and the card copies the full path", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+    await openSession(page, workspace)
+    await expect(trigger(page).locator('[data-slot="session-location-project"]')).toHaveText("Location")
+    await expect(trigger(page).locator('[data-slot="session-location-worktree"]')).toHaveText("quiet-falcon")
+    // The current server is never named in the breadcrumb.
+    await expect(trigger(page).locator('[data-slot="session-location-server"]')).toHaveCount(0)
+    await trigger(page).click()
+    const card = page.locator('[data-slot="session-location-card"]')
+    await expect(card.locator('[data-slot="session-location-path"]')).toHaveText(worktree)
+    await card.getByRole("menuitem", { name: "Copy path", exact: true }).click()
+    await expect(card).toBeHidden()
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(worktree)
+  })
+
+  test("names a session's server when it is not the current one", async ({ page }) => {
+    await mockWorkspace(page, { name: "Location", sessions: [] })
+    await mockRemoteServer(page, {
+      name: "apollo",
+      directory: "/srv/apollo/project",
+      sessions: [
+        {
+          id: "ses_remote",
+          title: "Remote session",
+          directory: "/srv/apollo/project",
+          slug: "ses_remote",
+          version: "dev",
+          time: { created: 1, updated: 1 },
+        },
+      ],
+    })
+    await seed(page, { tabs: [{ session: "ses_remote", server: REMOTE_SERVER }] })
+    await page.goto(sessionHref("ses_remote", REMOTE_SERVER))
+    await expect(trigger(page).locator('[data-slot="session-location-server"]')).toHaveText("apollo")
+    await expect(trigger(page).locator('[data-slot="session-location-project"]')).toHaveText("project")
+  })
+
+  test("shows the location bar under the mobile view tabs", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await openSession(page, workspace)
+    const bar = page.locator('[data-slot="session-location-bar"]')
+    await expect(bar.locator('[data-slot="session-location-worktree"]')).toHaveText("quiet-falcon")
+    await bar.locator('[data-slot="session-location-trigger"]').click()
+    await expect(page.locator('[data-slot="session-location-card"] [data-slot="session-location-path"]')).toHaveText(
+      worktree,
+    )
+  })
+})
 
 test.describe("rename", () => {
   const heading = (page: Page, name: string) => page.getByRole("heading", { name, exact: true })

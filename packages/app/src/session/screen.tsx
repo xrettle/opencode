@@ -41,7 +41,8 @@ import { createTimelineSearchController } from "./timeline/search-controller"
 import { TimelineSearchBar } from "./timeline/search-bar"
 import { createTimelineQuote, TimelineQuote } from "./timeline/quote"
 import { ActiveSessionComposerRegion, createActiveSessionRegion } from "./composer/region"
-import { SessionIdentityHeader } from "./session-identity-header"
+import { SessionIdentityHeader, SessionLocation } from "./session-identity-header"
+import { useServer } from "@/runtime/server/current"
 import { SessionReviewToggle } from "./header/session-header-actions"
 import { createTimelineCache } from "./timeline/cache"
 
@@ -73,6 +74,7 @@ function SessionScreenContent(props: {
   const language = useLanguage()
   const attachment = useExtensionAttachment()
   const settings = useSettings()
+  const server = useServer()
   const isDesktop = session.isDesktop
   const bottomMobileTabs = () => settings.general.mobileTitlebarPosition() === "bottom"
   const sidebar = createPanelSidebar()
@@ -135,6 +137,15 @@ function SessionScreenContent(props: {
   })
 
   const sideVisible = createMemo(() => isDesktop() && screen.side.open())
+
+  const location = {
+    directory: () => session.data.info()?.location.directory,
+    project: createMemo(() => {
+      const info = session.data.info()
+
+      return info ? server.ctx.projects.forSession(info) : undefined
+    }),
+  }
 
   // A close unmounts the side region; switching to a layout whose side is closed keeps it, hidden.
   createEffect(
@@ -283,6 +294,19 @@ function SessionScreenContent(props: {
       />
       <TimelineQuote controller={quote} />
       <Show when={!isDesktop() && !!session.identity.params.id && !bottomMobileTabs()}>{mobileTabs()}</Show>
+      {/* Narrow screens hide the timeline header, so the session's location gets its own bar. */}
+      <Show when={!isDesktop() && !!session.identity.params.id && mobileView() === "session"}>
+        <div
+          data-slot="session-location-bar"
+          class="flex h-9 shrink-0 items-center border-b border-v2-border-border-base px-2"
+        >
+          <SessionLocation
+            project={location.project()}
+            directory={location.directory()}
+            compact={!!session.data.info()?.parentID}
+          />
+        </div>
+      </Show>
       {/* Surface query errors without suspending session metadata while messages load. */}
       <Show when={timeline.resource.error}>
         {(error) => {

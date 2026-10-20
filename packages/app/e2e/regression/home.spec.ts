@@ -98,11 +98,11 @@ const worktree =
   "C:/OpenCode/Worktrees/project-42/long-folder-name-for-checking-wrapped-worktree-paths/another-long-folder-name"
 
 for (const state of [
-  { name: "local", directory: fixture.directory, icon: "monitor" },
-  { name: "worktree", directory: worktree, icon: "outline-worktree" },
-  { name: "unopened worktree", directory: recovery, icon: "outline-worktree", recovery: "unopened" },
+  { name: "local", directory: fixture.directory },
+  { name: "worktree", directory: worktree, worktree: "another-long-folder-name" },
+  { name: "unopened worktree", directory: recovery, worktree: "project-menu-recovery", recovery: "unopened" },
 ]) {
-  test(`the session project menu opens settings and Home for a ${state.name} project`, async ({ page }) => {
+  test(`the session location card opens settings and Home for a ${state.name} project`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 })
     const workspace = state.directory !== fixture.directory
     const messages = Promise.withResolvers<void>()
@@ -127,10 +127,10 @@ for (const state of [
     await page.goto(sessionHref(fixture.targetID))
 
     const header = page.locator("[data-session-title]")
-    const trigger = header.getByRole("button", { name, exact: true })
-    const menu = page.getByRole("menu", { name, exact: true })
+    const trigger = header.locator('[data-slot="session-location-trigger"]')
+    const menu = page.locator('[data-slot="session-location-card"]')
     const projectItem = menu.getByRole("menuitem", { name, exact: true })
-    const pathItem = menu.getByRole("menuitem", { name: state.directory, exact: true })
+    const copyItem = menu.getByRole("menuitem", { name: "Copy path", exact: true })
     const settings = page.getByTestId("settings-screen")
     await expect(header.getByRole("heading")).toHaveText(fixture.expected.targetTitle)
 
@@ -140,25 +140,22 @@ for (const state of [
         await expect(header.getByRole("button", { name: "More options", exact: true })).toBeVisible()
       }
 
-      await expect(trigger.locator("use")).toHaveAttribute("href", `#opencode-v2-icon-${state.icon}`)
+      await expect(trigger.locator('[data-slot="session-location-project"]')).toHaveText(name)
+      await expect(trigger.locator('[data-slot="session-location-worktree"]')).toHaveText(
+        state.worktree ? [state.worktree] : [],
+      )
       await trigger.click()
-      await expect(menu.getByRole("menuitem")).toHaveText([name, state.directory, "Edit project"])
-      await expect(pathItem).toBeDisabled()
+      await expect(menu.getByRole("menuitem")).toHaveText([name, "Copy path", "Edit project"])
+      await expect(menu.locator('[data-slot="session-location-path"]')).toHaveText(state.directory)
       await page.keyboard.press("Escape")
       await expect(menu).toBeHidden()
       await expect(trigger).toBeFocused()
       await trigger.press("ArrowDown")
       await expect(projectItem).toBeFocused()
       await page.keyboard.press("ArrowDown")
-      await expect(pathItem).toBeFocused()
-
-      for (const key of ["Enter", "Space"]) {
-        await page.keyboard.press(key)
-        await expect(menu).toBeVisible()
-        await expect(pathItem).toBeFocused()
-      }
-
+      await expect(copyItem).toBeFocused()
       await page.keyboard.press("ArrowDown")
+      await expect(menu.getByRole("menuitem", { name: "Edit project", exact: true })).toBeFocused()
       await page.keyboard.press("Enter")
       await expect(settings.getByRole("textbox", { name: "Project name", exact: true })).toHaveValue(name)
       await settings.getByRole("button", { name: "Back to projects", exact: true }).click()
@@ -172,37 +169,3 @@ for (const state of [
     await expect(row(page, fixture.expected.targetTitle)).toBeVisible()
   })
 }
-
-test("the project menu path arrow has a glyph when the page has an older icon sprite", async ({ page }) => {
-  await mockStressTimeline(page)
-  await seed(page, { tabs: [fixture.targetID] })
-  // A page cached before the arrow icon shipped carries a sprite without it.
-  await page.route(
-    (url) => url.pathname === sessionHref(fixture.targetID),
-    async (route) => {
-      const response = await route.fetch()
-      await route.fulfill({
-        response,
-        body: (await response.text()).replace(
-          '<div id="root"',
-          '<svg id="opencode-v2-icon-sprite" width="0" height="0" aria-hidden="true"><symbol id="opencode-v2-icon-monitor" viewBox="0 0 16 16"><path d="M1 1h14v14H1z"/></symbol></svg><div id="root"',
-        ),
-      })
-    },
-  )
-  await page.goto(sessionHref(fixture.targetID))
-  const header = page.locator("[data-session-title]")
-  await expect(header.getByRole("heading")).toHaveText(fixture.expected.targetTitle)
-  await header.getByRole("button", { name: fixture.project.name, exact: true }).click()
-
-  const arrow = page
-    .getByRole("menu")
-    .getByRole("menuitem", { name: fixture.directory, exact: true })
-    .locator('[data-slot="session-project-open-icon"]')
-
-  await expect(arrow).toHaveCount(1)
-  await expect
-    .poll(() => arrow.locator("svg").evaluate((element: SVGSVGElement) => element.getBBox().width))
-    .toBeGreaterThan(0)
-  await expect(page.locator("#opencode-v2-icon-sprite")).toHaveCount(1)
-})

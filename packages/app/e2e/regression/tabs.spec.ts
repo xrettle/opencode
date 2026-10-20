@@ -272,7 +272,8 @@ for (const row of [
       })
       await page.goto(sessionHref(a.id))
       await page.locator("html").evaluate((element, direction) => element.setAttribute("dir", direction), row.direction)
-      await page.getByRole("button", { name: "Tabs", exact: true }).click()
+      // The session location bar also names the "Tabs" project, so scope to the titlebar.
+      await page.locator('[data-slot="titlebar-v2"]').getByRole("button", { name: "Tabs", exact: true }).click()
 
       const drawer = page.locator('[data-slot="mobile-tabs-drawer"]')
       const tabA = drawer.locator(`[data-titlebar-tab-slot]:has(a[href="${sessionHref(a.id)}"])`)

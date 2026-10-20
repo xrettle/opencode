@@ -25,7 +25,7 @@ import { isWorkspaceDirectory } from "@/workspaces/paths"
 import { parseCommentNote, readPromptPresentation } from "@/composer/comment-note"
 import { parseVoiceDelegation } from "./voice-delegation"
 import { useCommand } from "@/shell/commands/command"
-import { SessionAncestorTrail, SessionProjectMenu, SessionTitleHeader } from "../session-identity-header"
+import { SessionAncestorTrail, SessionLocation, SessionTitleHeader } from "../session-identity-header"
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionWorkingIndicator } from "@/session/header/session-working-indicator"
 
@@ -454,10 +454,11 @@ function MessageTimelineView(
             <div class="h-12 w-full flex items-center justify-between gap-2">
               <div class="flex items-center gap-1 min-w-0 flex-1">
                 <div class="flex items-center gap-0.5 min-w-0 flex-1 w-full">
-                  <SessionProjectMenu
+                  <SessionLocation
                     project={headerProject()}
                     directory={sessionDirectory()}
-                    workspace={workspaceSession()}
+                    compact={!!parentID()}
+                    trailing={!!(parentID() || childTitle() || title.editing)}
                   />
                   <Show when={parentID()}>
                     {(id) => (
