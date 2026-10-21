@@ -360,7 +360,8 @@ export function createSessionTimelineInteraction(session: SessionModel) {
     () => state.refs.dock,
     (_rect, _element, entry) => {
       // The activity pill floats above the region out of flow, so only the docks, queue and composer count here.
-      const next = Math.ceil(entry.borderBoxSize[0]?.blockSize ?? 0)
+      const dpr = window.devicePixelRatio || 1
+      const next = Math.round((entry.borderBoxSize[0]?.blockSize ?? 0) * dpr) / dpr
 
       if (next === state.inset) return
       const delta = next - state.inset
