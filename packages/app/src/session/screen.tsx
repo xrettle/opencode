@@ -237,7 +237,10 @@ function SessionScreenContent(props: {
   })
 
   props.bindBackground(composer.requests.background.tasks)
-  useUsageExceededDialogs()
+  useUsageExceededDialogs({
+    selection: () => composer.active()?.composer.model.selection,
+    onDone: () => composer.active()?.composer.restoreFocus(),
+  })
 
   const quote = createTimelineQuote({
     root: timeline.scroller,
