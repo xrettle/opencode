@@ -15,17 +15,14 @@ const squares = Array.from({ length: 16 }, (_, i) => ({
   corner: cornerIndices.has(i),
 }))
 
-export function Spinner(props: {
-  class?: string
-  classList?: ComponentProps<"div">["classList"]
-  style?: ComponentProps<"div">["style"]
-}) {
+export function Spinner(props: ComponentProps<"svg"> & { "data-component"?: string }) {
   return (
     <svg
       {...props}
       ref={syncSpinPhase}
       viewBox="0 0 15 15"
-      data-component="spinner"
+      data-component={props["data-component"] ?? "spinner"}
+      data-slot="spinner-grid"
       classList={{
         ...props.classList,
         [props.class ?? ""]: !!props.class,

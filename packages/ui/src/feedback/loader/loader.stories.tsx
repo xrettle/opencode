@@ -1,13 +1,13 @@
 import { Loader } from "./loader"
 
 const docs = `### Overview
-Circular v2 loader for compact loading states.
+Pixel-grid loader for compact loading states.
 
 ### API
 - Accepts standard SVG props.
 
 ### Behavior
-- The foreground ring covers 33% of the circumference and rotates continuously.
+- Grid pixels pulse in opacity using the shared spinner animation.
 
 ### Accessibility
 - Sets \`aria-hidden="true"\` by default.

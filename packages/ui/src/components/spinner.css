@@ -4,3 +4,7 @@
   width: 18px;
   aspect-ratio: 1;
 }
+
+:root[data-motion="reduce"] [data-slot="spinner-grid"] rect {
+  animation: none !important;
+}
