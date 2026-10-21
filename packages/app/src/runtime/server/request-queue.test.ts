@@ -102,6 +102,39 @@ describe("createRequestQueue", () => {
     expect(input.queue.inflight()).toBe(0)
   })
 
+  test("writes, then session lists, take the next free slot ahead of queued reads, each tier in order", async () => {
+    const input = setup({ limit: 1 })
+
+    const requests: [string, string][] = [
+      ["GET", "/api/a"],
+      ["GET", "/api/b"],
+      ["GET", "/api/session?limit=1"],
+      ["POST", "/api/session/ses_1/message"],
+      ["GET", "/api/session?limit=2"],
+      ["DELETE", "/api/session/ses_2"],
+      ["GET", "/api/session/ses_1"],
+    ]
+
+    const responses = requests.map(([method, path]) => input.queue.fetch(`http://server${path}`, { method }))
+    await input.settle()
+
+    for (const _ of requests) {
+      input.pending.at(-1)?.resolve()
+      await input.settle()
+    }
+
+    expect(input.pending.map((item) => new URL(item.url).pathname + new URL(item.url).search)).toEqual([
+      "/api/a",
+      "/api/session/ses_1/message",
+      "/api/session/ses_2",
+      "/api/session?limit=1",
+      "/api/session?limit=2",
+      "/api/b",
+      "/api/session/ses_1",
+    ])
+    await Promise.all(responses)
+  })
+
   test("never counts the event stream against the budget", async () => {
     const input = setup({ limit: 1 })
     void input.queue.fetch("http://server/api/session")
