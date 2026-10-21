@@ -1,27 +1,39 @@
 import type { SessionMessageAssistant, SessionMessageInfo, SessionMessageUser } from "@opencode/client/promise"
-import { createEffect, createMemo, createSelector, For, onCleanup, onMount, Show, type Accessor } from "solid-js"
+import { frameLoop, prefersReducedMotion, Spring } from "@opencode/ui/motion"
+import { createEffect, createMemo, createSelector, For, onCleanup, Show, type Accessor } from "solid-js"
 import { createStore } from "solid-js/store"
 import { readPromptPresentation } from "@/composer/comment-note"
 import { useServerSDK } from "@/runtime/server/client"
 
 const turnPageLimit = 200
 
-// Previews clamp to a few lines; keep only enough text to fill them.
+// Previews fade out after a few lines; keep only enough text to fill them.
 const previewLength = 400
 
-// Keep index loading clear of session entry and tab switch rendering.
+// Keep index loading clear of session entry, tab switch rendering and the timeline's own history requests.
 const railDelay = 1000
+
+// The rail lists at most this many of the newest turns.
+const indexLimit = 1000
 
 // Resting on an unloaded turn fetches its reply; sweeping across the rail fetches nothing.
 const replyHoverDelay = 150
 
 const previewHoverDelay = 100
 
-const hoverRadius = 6
+// Messages read back from the next turn to find an unloaded turn's reply.
+const replyScanLimit = 20
 
-const tickWidths = { default: [7, 12], active: [12, 20], hovered: [14, 22] }
+// Ticks within this many pixels of the pointer swell towards it, like a dock.
+const waveRadius = 48
 
-const tickSpanWidth = Math.max(...Object.values(tickWidths).flat())
+const tickWidths = { default: 7, active: 12, peak: 22 }
+
+// The prompt's first line sits level with its tick: card padding, bubble padding, then half a 16px line.
+const previewAnchor = 20
+
+// The preview at its tallest, with both texts clamped. Clamping to it keeps the card still while a reply loads.
+const previewMaxHeight = 142
 
 type TurnNavigatorProps = {
   sessionID: string
@@ -29,6 +41,8 @@ type TurnNavigatorProps = {
   messages: Accessor<SessionMessageInfo[]>
   /** Whether the loaded messages reach the start of the session, making the index redundant. */
   complete: Accessor<boolean>
+  /** Whether the timeline is loading its own history; the index waits until it has been idle for a while. */
+  historyLoading: Accessor<boolean>
   assistantMessagesByParent: Accessor<Map<string, SessionMessageAssistant[]>>
   revertMessageID: Accessor<string | undefined>
   visibleUserMessageIDs: Accessor<ReadonlySet<string>>
@@ -46,24 +60,28 @@ export function TurnNavigator(props: TurnNavigatorProps) {
   const [state, setState] = createStore<{ engaged: boolean; index?: Map<string, string> }>({ engaged: false })
   let root: HTMLDivElement | undefined
 
-  const loadIndex = async (cursor?: string): Promise<[string, string][]> => {
-    const page = await sdk.api.message.list({
-      sessionID: props.sessionID,
-      type: "user",
-      limit: turnPageLimit,
-      ...(cursor ? { cursor } : { order: "asc" as const }),
-    })
+  const abort = new AbortController()
+  onCleanup(() => abort.abort())
+
+  // Newest first, so a capped index still meets the loaded tail.
+  const loadIndex = async (cursor?: string, count = 0): Promise<[string, string][]> => {
+    const page = await sdk.api.message.list(
+      { sessionID: props.sessionID, type: "user", limit: turnPageLimit, cursor },
+      { signal: abort.signal },
+    )
 
     const turns = page.data.flatMap((message): [string, string][] =>
       message.type === "user" ? [[message.id, promptPreview(message)]] : [],
     )
 
-    if (page.data.length < turnPageLimit || !page.cursor.next) return turns
+    if (page.data.length < turnPageLimit || !page.cursor.next || count + turns.length >= indexLimit) return turns
 
-    return [...turns, ...(await loadIndex(page.cursor.next))]
+    return [...turns, ...(await loadIndex(page.cursor.next, count + turns.length))]
   }
 
-  onMount(() => {
+  createEffect(() => {
+    if (state.engaged || props.historyLoading()) return
+
     const timer = setTimeout(() => {
       // Touch-only devices never load the rail.
       if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return
@@ -74,7 +92,7 @@ export function TurnNavigator(props: TurnNavigatorProps) {
       // On failure the rail lists the loaded turns.
       void loadIndex()
         .catch(() => [])
-        .then((turns) => setState("index", new Map(turns)))
+        .then((turns) => setState("index", new Map(turns.toReversed())))
     }, railDelay)
 
     onCleanup(() => clearTimeout(timer))
@@ -85,7 +103,7 @@ export function TurnNavigator(props: TurnNavigatorProps) {
       ref={root}
       data-component="session-turn-navigator"
       aria-hidden="true"
-      class="absolute start-0 top-[calc(var(--session-timeline-header-height,48px)+8px)] bottom-[calc(var(--session-timeline-inset,0px)+80px)] z-[50] flex w-4 flex-col justify-center pointer-events-none"
+      class="absolute start-0 top-[calc(var(--session-timeline-header-height,48px)+8px)] bottom-[calc(var(--session-timeline-inset,0px)+80px)] z-[50] flex w-8 flex-col justify-center pointer-events-none"
     >
       <Show when={state.engaged && (props.complete() || state.index)}>
         <TurnRail {...props} index={state.index} root={root!} />
@@ -98,46 +116,69 @@ function TurnRail(props: TurnNavigatorProps & { index?: Map<string, string>; roo
   const sdk = useServerSDK()
 
   const [state, setState] = createStore<{
-    hover?: { id: string; top: number; position: number }
-    showPreview: boolean
+    hover?: string
+    // The previewed turn, kept while the preview fades out.
+    shown?: string
+    open: boolean
     // Fetched replies by user message ID; null while loading or when there is no reply text.
     replies: Record<string, string | null>
-  }>({ showPreview: false, replies: {} })
+  }>({ open: false, replies: {} })
 
   const loaded = createMemo(
     () =>
       new Map(props.messages().flatMap((message) => (message.type === "user" ? [[message.id, message] as const] : []))),
   )
 
-  const turns = createMemo(() => {
-    const revert = props.revertMessageID()
+  // Timeline order, as the server lists it. IDs from other clients do not sort chronologically, so neither the order
+  // nor the reverted boundary may compare them. Streaming replaces the loaded messages on every delta, so the list keeps
+  // its identity until the turns themselves change.
+  const turns = createMemo(
+    () => {
+      const tail = [...loaded().keys()]
+      // Turns paged in from beyond a capped index are older than all of it.
+      const join = tail.findIndex((id) => props.index?.has(id))
+      const ids = [...new Set([...tail.slice(0, Math.max(0, join)), ...(props.index?.keys() ?? []), ...tail])]
+      const revert = props.revertMessageID()
+      const reverted = revert ? ids.indexOf(revert) : -1
 
-    return [...new Set([...(props.index?.keys() ?? []), ...loaded().keys()])]
-      .filter((id) => !revert || id < revert)
-      .toSorted()
-  })
+      return reverted === -1 ? ids : ids.slice(0, reverted)
+    },
+    [],
+    {
+      equals: (previous, next) => previous.length === next.length && previous.every((id, index) => id === next[index]),
+    },
+  )
 
-  // The turn's latest reply is the newest assistant message before the next turn.
+  const abort = new AbortController()
+  onCleanup(() => abort.abort())
+
+  // The turn's latest reply is the newest assistant text between its prompt and the next turn.
   const loadReply = async (id: string) => {
     setState("replies", id, null)
     const list = turns()
-    const next = list[list.indexOf(id) + 1] ?? props.revertMessageID()
 
-    const page = await sdk.api.message.list({
-      sessionID: props.sessionID,
-      type: "assistant",
-      limit: 1,
-      before: next,
-    })
+    const page = await sdk.api.message.list(
+      {
+        sessionID: props.sessionID,
+        limit: replyScanLimit,
+        before: list[list.indexOf(id) + 1] ?? props.revertMessageID(),
+      },
+      { signal: abort.signal },
+    )
 
-    const message = page.data[0]
+    const end = page.data.findIndex((message) => message.type === "user")
 
-    if (message?.type !== "assistant" || message.id < id) return
-    setState("replies", id, replyText([message]) ?? null)
+    if (end !== -1 && page.data[end]!.id !== id) return
+
+    const replies = (end === -1 ? page.data : page.data.slice(0, end)).filter(
+      (message): message is SessionMessageAssistant => message.type === "assistant",
+    )
+
+    setState("replies", id, replyText(replies.toReversed()) ?? null)
   }
 
   createEffect(() => {
-    const id = state.hover?.id
+    const id = state.hover
 
     if (!id || loaded().has(id) || state.replies[id] !== undefined) return
     const timer = setTimeout(() => void loadReply(id).catch(() => undefined), replyHoverDelay)
@@ -145,131 +186,225 @@ function TurnRail(props: TurnNavigatorProps & { index?: Map<string, string>; roo
   })
 
   const active = createSelector(props.visibleUserMessageIDs, (id: string, visible) => visible.has(id))
-  const hovered = createSelector(() => state.hover?.id)
+  const hovered = createSelector(() => state.hover)
   const hovering = createMemo(() => !!state.hover)
 
   // Only the first preview waits; moving along an engaged rail switches it immediately.
   createEffect(() => {
     if (!hovering()) {
-      setState("showPreview", false)
+      setState("open", false)
 
       return
     }
 
-    const timer = setTimeout(() => setState("showPreview", true), previewHoverDelay)
+    const timer = setTimeout(() => setState("open", true), previewHoverDelay)
     onCleanup(() => clearTimeout(timer))
   })
 
-  const tickScale = (id: string, proximity: number) => {
-    const widths = hovered(id) ? tickWidths.hovered : active(id) ? tickWidths.active : tickWidths.default
+  // A closed preview keeps its last content for the fade-out without following a streaming reply.
+  const preview = createMemo((previous?: { prompt?: string; response?: string }) => {
+    const id = state.shown
 
-    return (widths[0] + (widths[1] - widths[0]) * (hovered(id) ? 1 : proximity)) / tickSpanWidth
-  }
-
-  const preview = createMemo(() => {
-    const hover = state.hover
-
-    if (!hover) return
-    const message = loaded().get(hover.id)
+    if (!id || !state.open) return previous
+    const message = loaded().get(id)
 
     return {
-      top: hover.top,
-      prompt: message ? promptPreview(message) : props.index?.get(hover.id),
-      response: message
-        ? replyText(props.assistantMessagesByParent().get(hover.id) ?? [])
-        : (state.replies[hover.id] ?? undefined),
+      prompt: message ? promptPreview(message) : props.index?.get(id),
+      response: message ? replyText(props.assistantMessagesByParent().get(id) ?? []) : (state.replies[id] ?? undefined),
     }
   })
 
-  const turnAt = (event: MouseEvent) =>
-    event.target instanceof Element ? event.target.closest<HTMLElement>("[data-turn]") : null
+  let list: HTMLDivElement | undefined
+  let card: HTMLDivElement | undefined
+  // Each tick's element and the scale last written to it.
+  const ticks = new Map<string, { element: HTMLElement; scale: number }>()
+  // The pointer's clientY over the rail, and the rail's geometry from the last frame's read phase.
+  let pointer: number | undefined
 
-  const hover = (event: PointerEvent) => {
-    const tick = turnAt(event)
-    const id = tick?.dataset.turn
+  const rail = { top: 0, height: 0, root: 0, rootHeight: 0 }
 
-    if (!tick || !id) return
-    const box = tick.getBoundingClientRect()
-    const position = Number(tick.dataset.index) + (event.clientY - box.top) / box.height - 0.5
-
-    if (state.hover?.id === id && Math.abs(state.hover.position - position) < 0.05) return
-    setState("hover", {
-      id,
-      top: box.top + box.height / 2 - props.root.getBoundingClientRect().top,
-      position,
-    })
+  // `position` follows the pointer in tick units and `wave` swells the ticks around it, so one pair drives every tick.
+  const motion = {
+    wave: Spring.fromDuration(0, { duration: 0.2, bounce: 0 }),
+    position: Spring.fromDuration(0, { duration: 0.12, bounce: 0 }),
+    top: Spring.fromDuration(0, { duration: 0.25, bounce: 0 }),
+    opacity: Spring.fromDuration(0, { duration: 0.18, bounce: 0 }),
   }
+
+  let frame: (() => void) | undefined
+
+  // Reduced motion drops travel but keeps the preview's fade.
+  const step = (spring: Spring, dt: number) =>
+    spring === motion.opacity || !prefersReducedMotion() ? spring.step(dt) : spring.snap(spring.target).value
+
+  const paint = (dt: number) => {
+    const ids = turns()
+    const pitch = rail.height / Math.max(1, ids.length)
+
+    if (pointer !== undefined && pitch > 0) {
+      const hit = railHit(pointer - rail.top, rail.height, ids.length)
+      const id = ids[hit.index]
+      const tick = rail.top - rail.root + (hit.index + 0.5) * pitch
+
+      // Entering the rail starts the wave under the pointer rather than sweeping in from where it left.
+      if (motion.wave.value === 0) motion.position.snap(hit.position)
+      motion.position.set(hit.position)
+      motion.wave.set(1)
+      motion.top.set(Math.max(0, Math.min(rail.rootHeight - previewMaxHeight, tick - previewAnchor)))
+
+      // Store writes re-render, so they wait until the frame's style writes are done.
+      if (id && id !== state.hover) queueMicrotask(() => pointer !== undefined && setState({ hover: id, shown: id }))
+    }
+
+    const position = step(motion.position, dt)
+    const wave = step(motion.wave, dt)
+
+    ids.forEach((id, index) => {
+      const distance = Math.abs(index - position) * pitch
+      const swell = distance < waveRadius ? (wave * (1 + Math.cos((distance / waveRadius) * Math.PI))) / 2 : 0
+      const rest = active(id) ? tickWidths.active : tickWidths.default
+      const scale = (rest + (tickWidths.peak - rest) * swell) / tickWidths.peak
+      const tick = ticks.get(id)
+
+      if (!tick || tick.scale === scale) return
+      tick.scale = scale
+      tick.element.style.transform = `scaleX(${scale})`
+    })
+
+    motion.opacity.set(state.open ? 1 : 0)
+
+    // A preview that opens from hidden appears in place; one already showing glides to the next turn.
+    if (motion.opacity.value === 0) motion.top.snap(motion.top.target)
+    const opacity = step(motion.opacity, dt)
+
+    if (card) {
+      card.style.transform = `translateY(${step(motion.top, dt)}px)`
+      card.style.opacity = String(opacity)
+      card.style.visibility = opacity === 0 ? "hidden" : "visible"
+    }
+
+    return Object.values(motion).some((spring) => !spring.resting)
+  }
+
+  const wake = () => {
+    frame ??= frameLoop.addMeasured(
+      () => {
+        // Only the pointer needs geometry; reading it otherwise would force a layout on every streamed frame.
+        if (!list || pointer === undefined) return
+        const box = list.getBoundingClientRect()
+        const root = props.root.getBoundingClientRect()
+        rail.top = box.top
+        rail.height = box.height
+        rail.root = root.top
+        rail.rootHeight = root.height
+      },
+      (dt) => {
+        if (paint(dt)) return true
+        frame = undefined
+
+        return false
+      },
+    )
+  }
+
+  const leave = () => {
+    pointer = undefined
+    motion.wave.set(0)
+    setState("hover", undefined)
+    wake()
+  }
+
+  // Resting widths follow the visible turns, and the preview follows its open state.
+  createEffect(() => {
+    turns().forEach((id) => active(id))
+    void state.open
+    wake()
+  })
+
+  onCleanup(() => frame?.())
 
   return (
     <Show when={turns().length > 1}>
       <div
-        // Keep the expanded hit area while visual emphasis follows the pointer locally.
-        class="flex max-h-full min-h-0 w-4 cursor-pointer flex-col py-1 pointer-events-auto transition-[width] duration-150 hover:w-8 animate-in fade-in [animation-duration:180ms] [animation-timing-function:ease-out] motion-reduce:animate-none motion-reduce:transition-none"
-        onPointerMove={hover}
-        onPointerLeave={() => setState("hover", undefined)}
+        class="flex max-h-full min-h-0 w-full cursor-pointer flex-col py-6 pointer-events-auto animate-in fade-in [animation-duration:180ms] [animation-timing-function:ease-out] motion-reduce:animate-none"
+        onPointerMove={(event) => {
+          pointer = event.clientY
+          wake()
+        }}
+        onPointerLeave={leave}
+        // Scrolling over the rail closes the preview; the next pointer move reopens it on the turn below the pointer.
+        onWheel={leave}
         onClick={(event) => {
-          const id = turnAt(event)?.dataset.turn
+          if (!list) return
+          const box = list.getBoundingClientRect()
+          const ids = turns()
+          const id = ids[railHit(event.clientY - box.top, box.height, ids.length).index]
 
           if (id) props.onSelect(id)
         }}
       >
-        <For each={turns()}>
-          {(id, index) => {
-            const proximity = createMemo(() => {
-              if (!state.hover) return 0
-              const distance = Math.abs(index() - state.hover.position)
-
-              if (distance >= hoverRadius) return 0
-
-              return (1 + Math.cos((distance / hoverRadius) * Math.PI)) / 2
-            })
-
-            return (
+        <div ref={list} class="flex min-h-0 flex-col">
+          <For each={turns()}>
+            {(id, index) => (
               <div
                 data-turn={id}
                 data-index={index()}
-                // Active color wins so a clicked or visible turn stays active under the pointer.
+                // Active state wins so a clicked or visible turn stays active under the pointer. The hovered tick is
+                // still the brightest: it lights at once and cools off as the pointer moves on.
                 data-state={active(id) ? "active" : hovered(id) ? "hovered" : "default"}
-                class="flex h-2.5 min-h-0 w-full shrink items-center ps-2.5 [--tick-color:var(--v2-background-bg-layer-04)] [--tick-opacity:1] [[data-color-scheme=dark]_&]:data-[state=default]:[--tick-opacity:0.7] data-[state=active]:[--tick-color:var(--v2-icon-icon-muted)] [[data-color-scheme=dark]_&]:data-[state=active]:[--tick-color:var(--v2-icon-icon-base)] data-[state=hovered]:[--tick-color:var(--v2-icon-icon-faint)] [[data-color-scheme=dark]_&]:data-[state=hovered]:[--tick-color:var(--v2-icon-icon-muted)]"
+                class="flex h-2.5 min-h-0 w-full shrink items-center ps-2.5 [--tick-color:var(--v2-background-bg-layer-04)] [--tick-opacity:1] [[data-color-scheme=dark]_&]:data-[state=default]:[--tick-opacity:0.7] data-[state=active]:[--tick-color:var(--v2-icon-icon-muted)]"
               >
                 <span
-                  class="block h-0.5 shrink-0 origin-left bg-(--tick-color) transition-[transform,background-color,opacity] duration-150 ease-out rtl:origin-right motion-reduce:transition-none"
+                  ref={(element) => {
+                    const scale = (active(id) ? tickWidths.active : tickWidths.default) / tickWidths.peak
+                    element.style.transform = `scaleX(${scale})`
+                    ticks.set(id, { element, scale })
+                    onCleanup(() => ticks.delete(id))
+                  }}
+                  class="block h-0.5 shrink-0 origin-left bg-(--tick-color) rtl:origin-right"
                   style={{
-                    width: `${tickSpanWidth}px`,
-                    transform: `scaleX(${tickScale(id, proximity())})`,
-                    opacity: "var(--tick-opacity)",
+                    width: `${tickWidths.peak}px`,
+                    opacity: hovered(id) ? 1 : "var(--tick-opacity)",
+                    "background-color": hovered(id) ? "var(--v2-icon-icon-base)" : undefined,
+                    transition: hovered(id) ? "none" : "background-color 180ms ease-out, opacity 180ms ease-out",
                   }}
                 />
               </div>
-            )
-          }}
-        </For>
+            )}
+          </For>
+        </div>
       </div>
-      <Show when={state.showPreview && preview()}>
-        {(item) => (
-          <div
-            data-slot="session-turn-navigator-preview"
-            class="pointer-events-none absolute start-11 top-0 w-[320px] max-w-[calc(100vw-4rem)] transition-transform duration-100 ease-out motion-reduce:transition-none"
-            style={{ transform: `translateY(${item().top}px)` }}
-          >
-            <div
-              class="-translate-y-1/2 rounded-lg bg-v2-background-bg-base px-3 py-2 animate-in fade-in duration-150 ease-out motion-reduce:animate-none"
-              style={{ "box-shadow": "var(--v2-elevation-raised)" }}
-            >
-              <p dir="auto" class="line-clamp-2 text-[13px] font-medium leading-text-compact text-v2-text-text-base">
-                {item().prompt}
-              </p>
+      <div
+        ref={card}
+        data-slot="session-turn-navigator-preview"
+        class="pointer-events-none invisible absolute start-12 top-0 w-[320px] max-w-[calc(100vw-5rem)] rounded-lg bg-v2-background-bg-base p-2 opacity-0"
+        style={{ "box-shadow": "var(--v2-elevation-raised)" }}
+      >
+        <Show when={preview()}>
+          {(item) => (
+            <>
+              <div class="rounded-md bg-v2-background-bg-layer-02 px-2 py-1">
+                <p
+                  dir="auto"
+                  class="max-h-12 overflow-hidden text-[13px] font-medium leading-text-compact text-v2-text-text-base [mask-image:linear-gradient(to_bottom,#000_32px,transparent_48px)]"
+                >
+                  {item().prompt}
+                </p>
+              </div>
               <Show when={item().response}>
                 {(text) => (
-                  <p dir="auto" class="mt-1 line-clamp-3 text-[13px] leading-text-base text-v2-text-text-muted">
+                  <p
+                    dir="auto"
+                    class="mt-1.5 max-h-16 overflow-hidden px-2 text-[13px] leading-text-compact text-v2-text-text-muted [mask-image:linear-gradient(to_bottom,#000_48px,transparent_64px)]"
+                  >
                     {text()}
                   </p>
                 )}
               </Show>
-            </div>
-          </div>
-        )}
-      </Show>
+            </>
+          )}
+        </Show>
+      </div>
     </Show>
   )
 }
@@ -288,4 +423,14 @@ function replyText(messages: SessionMessageAssistant[]) {
 
 function previewText(text: string) {
   return text.replace(/\s+/g, " ").trim().slice(0, previewLength)
+}
+
+/**
+ * The tick nearest a pointer `offset` px down a rail of `count` evenly spaced ticks `height` px tall, and the pointer's
+ * position in tick units (0 is the first tick's centre). Offsets beyond either end clamp to that end's tick.
+ */
+function railHit(offset: number, height: number, count: number) {
+  const position = Math.min(count - 1, Math.max(0, (offset / height) * count - 0.5))
+
+  return { index: Math.round(position), position }
 }
