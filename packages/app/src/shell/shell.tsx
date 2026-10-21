@@ -39,10 +39,12 @@ export default function Layout(props: ParentProps) {
     tabsWidth: number
     tabsMount: HTMLElement | undefined
     tabsAside: HTMLElement | undefined
+    tabsPanel: HTMLElement | undefined
   }>({
     tabsWidth: 260,
     tabsMount: undefined,
     tabsAside: undefined,
+    tabsPanel: undefined,
   })
 
   const verticalTabs = () => preferences.appearance.tabLayout() !== "horizontal" && !mobile()
@@ -62,6 +64,13 @@ export default function Layout(props: ParentProps) {
       paintCollapsedSlots(closed)
     },
     measure: () => measureSidebarToggles(state.tabsWidth),
+    element: () => state.tabsPanel,
+    offset: () => -10,
+    neighbours: () => [
+      [document.querySelector<HTMLElement>('[data-slot="session-chat-panel"]'), "center"],
+      [document.querySelector<HTMLElement>('[data-slot="session-side-panel-presence"]'), "start"],
+    ],
+    resize: () => state.tabsAside,
   })
 
   replayPanelToggle({ id: "sidebar", label: "Toggle the left sidebar", toggle: toggleSidebar })
@@ -160,6 +169,7 @@ export default function Layout(props: ParentProps) {
               {/* Skipped rather than display: none or inert, so neither direction restyles the sidebar's contents and
                   a reopen reuses their layout. */}
               <div
+                ref={(element) => setState("tabsPanel", element)}
                 class="absolute inset-0 overflow-hidden [contain:layout_style_paint]"
                 classList={{ "[content-visibility:hidden]": !sidebarMotion.present() }}
               >
