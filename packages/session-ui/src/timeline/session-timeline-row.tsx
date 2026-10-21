@@ -6,9 +6,10 @@ import type {
 } from "@opencode/client/promise"
 import { useI18n } from "@opencode/ui/context/i18n"
 import { Option, Predicate, Schema } from "effect"
-import { For, Show, createEffect, createMemo, type Accessor, type JSX } from "solid-js"
+import { For, Show, createEffect, createMemo, untrack, type Accessor, type JSX } from "solid-js"
 import { DiffChanges } from "@opencode/ui/diff-changes"
 import { Icon } from "@opencode/ui/icon"
+import { springStyle } from "@opencode/ui/motion/solid"
 import { Dynamic } from "solid-js/web"
 import type { SessionUserActions, SessionUserAttachmentReference, SessionUserComment } from "../actions"
 import { useData } from "../context"
@@ -33,6 +34,8 @@ import { SessionRetry } from "../components/session-retry"
 import { SessionError } from "../components/session-error"
 import { timelineCategory, type TimelineDetail } from "./detail"
 import { currentToolFailed } from "../message/current-tool-state"
+import { userMessageRuns, userRunSpring } from "./user-runs"
+import { attached } from "../components/message-file"
 import {
   createReactiveTimelineProjection,
   Timeline,
@@ -113,6 +116,33 @@ export function createSessionTimelineRowRenderer(input: {
 
     return owners
   })
+
+  const runs = createMemo(() => {
+    const messages = input.projection.messageByID()
+    const context = input.projection.userContextByID()
+
+    return userMessageRuns(input.projection.rows(), [...messages.values()], (id) => {
+      const message = messages.get(id)
+      const user = context.get(id)
+
+      if (message?.type !== "user" || !user) return undefined
+      const status = input.actions?.pending?.status(id)
+      const presentation = input.presentation(message)
+
+      return {
+        kind: status === "steering" || status === "stranded" ? "pending" : "sent",
+        agent: user.agent,
+        model: user.model,
+        text: !!(presentation?.displayText ?? message.text),
+        attachments: (message.files ?? []).some(attached) || !!presentation?.references?.length,
+      }
+    })
+  })
+
+  const run = (messageID: string) =>
+    createMemo(() => runs().get(messageID), undefined, {
+      equals: (a, b) => a?.above === b?.above && a?.below === b?.below,
+    })
 
   const workingTurn = (messageID: string) =>
     input.status().type !== "idle" && input.projection.activeMessageID() === messageID
@@ -255,7 +285,9 @@ export function createSessionTimelineRowRenderer(input: {
             }
             reasoningOpen={(id) => input.disclosure.value(id)}
             onReasoningOpenChange={(id, open) => input.disclosure.set(id, open)}
-            toolDefaultOpen={(tool) => (input.timelineDetail || tool.name === "execute" ? contentDefaultOpen(tool) : false)}
+            toolDefaultOpen={(tool) =>
+              input.timelineDetail || tool.name === "execute" ? contentDefaultOpen(tool) : false
+            }
             toolOpen={(id) => input.disclosure.value(`${row().group.key}:tool:${id}`)}
             onToolOpenChange={(id, open) => input.disclosure.set(`${row().group.key}:tool:${id}`, open)}
             fileOpen={(path) =>
@@ -787,8 +819,31 @@ export function createSessionTimelineRowRenderer(input: {
     )
   }
 
+  // A run's messages sit as close as the iOS app's (4 px); the gap springs as a message joins or leaves.
+  function TurnGap(props: { messageID: string }) {
+    let element: HTMLDivElement | undefined
+    const joined = run(props.messageID)
+    springStyle(
+      () => element,
+      () => ({ height: joined()?.above ? 4 : 24 }),
+      (el, value) => {
+        el.style.height = `${value.height}px`
+      },
+      userRunSpring,
+    )
+
+    return (
+      <div
+        ref={element}
+        data-timeline-row="TurnGap"
+        aria-hidden="true"
+        style={{ height: untrack(joined)?.above ? "4px" : "24px" }}
+      />
+    )
+  }
+
   const render = (row: Accessor<TimelineRow.TimelineRow>, onSizeChange?: () => void) => {
-    if (Predicate.isTagged(row(), "TurnGap")) return <div data-timeline-row="TurnGap" aria-hidden="true" class="h-6" />
+    if (Predicate.isTagged(row(), "TurnGap")) return <TurnGap messageID={row().userMessageID} />
 
     // The host owns live status and renders this slot itself.
     if (Predicate.isTagged(row(), "Activity")) return null
@@ -809,6 +864,7 @@ export function createSessionTimelineRowRenderer(input: {
       })
 
       const context = createMemo(() => input.projection.userContextByID().get(current().userMessageID))
+      const joined = run(current().userMessageID)
 
       return (
         <Frame row={current()}>
@@ -829,6 +885,7 @@ export function createSessionTimelineRowRenderer(input: {
                       historicalAgent={context()?.agent ?? ""}
                       historicalModel={context()?.model ?? { id: "", providerID: "" }}
                       actions={input.actions}
+                      run={joined()}
                     />
                   </div>
                 </div>
