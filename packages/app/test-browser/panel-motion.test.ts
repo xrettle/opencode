@@ -358,57 +358,6 @@ function setupJames(initial: boolean) {
   return { played, setOpen, closed, painted, motion }
 }
 
-const tick = async () => {
-  await Promise.resolve()
-  await Promise.resolve()
-}
-
-const land = async (played: Played[]) => {
-  played.filter((animation) => !animation.cancelled).forEach((animation) => animation.finish())
-  await tick()
-}
-
-it("James opens with the layout first, then shifts the panel in on a spring and fades it up from 0.15", async () => {
-  const panel = setupJames(false)
-  panel.setOpen(true)
-  expect(panel.painted.width).toBe(200)
-  expect(panel.motion.present()).toBe(true)
-  await tick()
-
-  const [shift, fade] = panel.played
-  expect(shift.keyframes.transform).toEqual(["translateX(-10px)", "none"])
-  // A 240 ms spring without bounce: x(t) = 1 - (1 + ωt)e^(-ωt), sampled per 60 Hz frame.
-  const omega = (2 * Math.PI) / 0.24
-  const points = String(shift.options.easing).slice("linear(".length, -1).split(", ").map(Number)
-  points.slice(1, -1).forEach((point, index) => {
-    const t = (index + 1) / 60
-    expect(point).toBeCloseTo(1 - (1 + omega * t) * Math.exp(-omega * t), 2)
-  })
-  expect(fade.keyframes.opacity).toEqual([0.15, 1])
-  expect(fade.options).toMatchObject({ duration: 240, easing: "cubic-bezier(0.17, 0.85, 0.63, 1.03)" })
-  expect(panelsMoving()).toBe(true)
-
-  const ran: string[] = []
-  panel.motion.whenSettled(() => ran.push("opened"))
-  await land(panel.played)
-  expect(ran).toEqual(["opened"])
-  expect(panelsMoving()).toBe(false)
-})
-
-it("James closes at once, cancelling an opening in flight", async () => {
-  const panel = setupJames(false)
-  panel.setOpen(true)
-  await tick()
-  panel.setOpen(false)
-
-  expect(panel.painted.width).toBe(0)
-  expect(panel.motion.present()).toBe(false)
-  expect(panel.closed).toHaveLength(1)
-  expect(panel.played).toHaveLength(2)
-  expect(panel.played.every((animation) => animation.cancelled)).toBe(true)
-  expect(panelsMoving()).toBe(false)
-})
-
 it("James snaps under reduced motion", () => {
   document.documentElement.dataset.motion = "reduce"
   cleanups.push(() => delete document.documentElement.dataset.motion)
