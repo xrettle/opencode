@@ -97,6 +97,13 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     keywords: "genui generative interface dashboards charts forms",
   },
   {
+    tab: "experimental",
+    label: "settings.experimental.row.newIcons.title",
+    target: "settings-new-icons",
+    description: "settings.experimental.row.newIcons.description",
+    keywords: "icons iconography glyphs redesign",
+  },
+  {
     tab: "appearance",
     label: "settings.general.row.colorScheme.title",
     target: "settings-color-scheme",

@@ -95,6 +95,7 @@ describe("settings schema", () => {
         showTurnDiffs: false,
         backgroundActivity: "left",
         generatedUI: true,
+        newIcons: false,
         mobileTitlebarPosition: "top",
         followUpBehavior: "steer",
       },

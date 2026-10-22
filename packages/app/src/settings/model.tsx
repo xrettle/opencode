@@ -3,6 +3,7 @@ import { createEffect, createMemo } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Effect, Option, Predicate, Schema, SchemaGetter } from "effect"
 import { createSimpleContext } from "@opencode/ui/context"
+import { setNewIcons } from "@opencode/ui/icon"
 import { timelinePresets, type TimelineCategory, type TimelineDetail } from "@opencode/session-ui/timeline/detail"
 import { persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
@@ -125,6 +126,8 @@ const generalSchema = Persistence.struct({
   backgroundActivity: Schema.Literals(["off", "left", "center", "right"]),
   // Lets agents render generated UI in the timeline; an experiment users can turn off.
   generatedUI: Schema.Boolean,
+  // The "New icons" design experiment, off until it ships.
+  newIcons: Schema.Boolean,
   mobileTitlebarPosition: Schema.Literals(["top", "bottom"]),
   // Owned by the review extension, which copies it out once; kept so settings rewrites cannot drop it first.
   mobileDiffWrap: Persistence.optional(Schema.Boolean),
@@ -292,6 +295,7 @@ export const defaultSettings: Settings = {
     showTurnDiffs: false,
     backgroundActivity: "left",
     generatedUI: true,
+    newIcons: false,
     mobileTitlebarPosition: "top",
     followUpBehavior: "steer",
   },
@@ -336,6 +340,9 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
       // face with the shell so that font discovery does not resize that mount.
       void document.fonts?.load(`440 13px ${mono}`).catch(() => undefined)
     })
+
+    const newIcons = withFallback(() => store.general?.newIcons, defaultSettings.general.newIcons)
+    createEffect(() => setNewIcons(newIcons()))
 
     const reduceMotion = withFallback(() => store.appearance?.reduceMotion, defaultSettings.appearance.reduceMotion)
     const systemReducedMotion = createMediaQuery("(prefers-reduced-motion: reduce)")
@@ -384,6 +391,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         generatedUI: withFallback(() => store.general?.generatedUI, defaultSettings.general.generatedUI),
         setGeneratedUI(value: boolean) {
           setStore("general", "generatedUI", value)
+        },
+        newIcons,
+        setNewIcons(value: boolean) {
+          setStore("general", "newIcons", value)
         },
         mobileTitlebarPosition: withFallback(
           () => store.general?.mobileTitlebarPosition,
