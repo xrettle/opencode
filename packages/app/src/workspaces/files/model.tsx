@@ -298,6 +298,26 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       onCleanup(stop)
     })
 
+    // The server watches a file for 24 hours from the latest request, so file tabs ask when they open or are shown,
+    // and the open tabs ask again on reconnect (a restarted server forgets its watches). Older servers lack the route.
+    const watch = (input: string) => {
+      const file = path.normalize(input)
+      if (!file || path.absolute(file)) return
+      void serverSDK.api.file.watch({ path: file, location: { directory: scope() } }).catch(() => {})
+    }
+
+    const unwatch = (input: string) => {
+      const file = path.normalize(input)
+      if (!file || path.absolute(file)) return
+      void serverSDK.api.file.unwatch({ path: file, location: { directory: scope() } }).catch(() => {})
+    }
+
+    createEffect(() => {
+      const stop = serverSDK.event.on("server.connected", () => extensions.files.opened().forEach(watch))
+
+      onCleanup(stop)
+    })
+
     const get = (input: string) => {
       const file = path.normalize(input)
       const state = store.file[file]
@@ -348,6 +368,8 @@ export const { use: useFile, provider: FileProvider } = createSimpleContext({
       get,
       notFound: (input: string) => store.file[path.normalize(input)]?.notFound ?? false,
       load,
+      watch,
+      unwatch,
       exists,
       scrollTop,
       scrollLeft,
