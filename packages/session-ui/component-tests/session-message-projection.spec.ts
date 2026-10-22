@@ -49,7 +49,7 @@ story("smoothly delivers a pending footer with and without hover", async ({ moun
   const message = timeline.locator('[data-component="user-message"]')
   const footer = timeline.locator('[data-slot="user-message-copy-wrapper"]')
   const timestamp = timeline.locator('[data-slot="user-message-meta-tail"]')
-  const pending = timeline.locator('[data-slot="user-message-meta"] [data-slot="user-message-transition"]')
+  const pending = timeline.locator('[data-slot="user-message-transition"]:has([data-slot="user-message-pending"])')
 
   await page.mouse.move(0, 0)
   await expect(footer).toHaveCSS("height", "20px")
@@ -65,7 +65,12 @@ story("smoothly delivers a pending footer with and without hover", async ({ moun
 
     if (hover) await message.hover()
     if (!hover) await page.mouse.move(0, 0)
-    await expect(timestamp).toHaveCSS("opacity", hover ? "1" : "0")
+    // Pending stands in for the unsent time, so the actions follow the labels without a gap held for it.
+    await expect(timestamp).toBeHidden()
+    const label = await timeline.locator('[data-slot="user-message-meta-item"]').last().boundingBox()
+    const actions = await timeline.locator('[data-slot="user-message-actions"]').boundingBox()
+    if (!label || !actions) throw new Error("Pending footer geometry is unavailable")
+    expect(actions.x - label.x - label.width).toBeLessThanOrEqual(9)
     await timeline.getByLabel("Delivery state").selectOption("delivered")
 
     const middle = await message.evaluate((element) => {
@@ -73,7 +78,9 @@ story("smoothly delivers a pending footer with and without hover", async ({ moun
         animation.pause()
         animation.currentTime = 100
       }
-      const pending = element.querySelector('[data-slot="user-message-meta"] [data-slot="user-message-transition"]')!
+      const pending = element.querySelector(
+        '[data-slot="user-message-transition"]:has([data-slot="user-message-pending"])',
+      )!
       const footer = element.querySelector('[data-slot="user-message-copy-wrapper"]')!
 
       return {

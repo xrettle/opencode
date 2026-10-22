@@ -662,24 +662,27 @@ export function CurrentUserMessageDisplay(props: {
                   </For>
                 </span>
               </Show>
-              <span data-slot="user-message-meta-tail">
-                <Show when={metaLabels().length > 0 || waiting()}>
-                  <span data-slot="user-message-meta-separator" aria-hidden="true">
-                    {"\u00B7"}
-                  </span>
-                </Show>
-                <Tooltip
-                  appearance="compact"
-                  value={fulltimefmt().format(props.message.time.created)}
-                  placement="top"
-                  triggerTabIndex={0}
-                  openDelay={800}
-                >
-                  <time dir="auto" dateTime={new Date(props.message.time.created).toISOString()}>
-                    {stamp()}
-                  </time>
-                </Tooltip>
-              </span>
+              {/* A pending steer has not been sent, so Pending stands in for the time instead of reserving its width. */}
+              <UserMessageTransition active={!waiting()}>
+                <span data-slot="user-message-meta-tail">
+                  <Show when={metaLabels().length > 0}>
+                    <span data-slot="user-message-meta-separator" aria-hidden="true">
+                      {"\u00B7"}
+                    </span>
+                  </Show>
+                  <Tooltip
+                    appearance="compact"
+                    value={fulltimefmt().format(props.message.time.created)}
+                    placement="top"
+                    triggerTabIndex={0}
+                    openDelay={800}
+                  >
+                    <time dir="auto" dateTime={new Date(props.message.time.created).toISOString()}>
+                      {stamp()}
+                    </time>
+                  </Tooltip>
+                </span>
+              </UserMessageTransition>
             </span>
           </span>
           {renderActions()}
