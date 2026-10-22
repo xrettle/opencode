@@ -247,6 +247,8 @@ export type McpResourceTemplate = {
   mimeType?: string
 }
 
+export type PtyTicketConnectToken = { ticket: string; expires_in: number }
+
 export type CredentialKey = { type: "key"; key: string; metadata?: { [x: string]: JsonValue } }
 
 export type ProjectVcs = string
@@ -287,8 +289,6 @@ export type SessionStatus =
       next: number
     }
   | { type: "busy" }
-
-export type PtyTicketConnectToken = { ticket: string; expires_in: number }
 
 export type PersistentPtyHandoff = { directory: string; instanceID: string; ticket: string; expiresAt: number }
 
@@ -2352,6 +2352,7 @@ export type ConfigEntry =
         experimental?: {
           portable_shell_scanner?: boolean
           todo?: boolean
+          precompute_compaction?: boolean
           subagent_depth?: number
           location_idle_timeout?: string | false
           policies?: Array<{
@@ -2861,6 +2862,10 @@ export type McpServerNotFoundError = {
 export const isMcpServerNotFoundError = (value: unknown): value is McpServerNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "McpServerNotFoundError"
 
+export type ForbiddenError = { readonly _tag: "ForbiddenError"; readonly message: string }
+export const isForbiddenError = (value: unknown): value is ForbiddenError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ForbiddenError"
+
 export type ProjectNotFoundError = {
   readonly _tag: "ProjectNotFoundError"
   readonly projectID: string
@@ -2910,10 +2915,6 @@ export const isRpcInternalError = (value: unknown): value is RpcInternalError =>
 export type PtyNotFoundError = { readonly _tag: "PtyNotFoundError"; readonly ptyID: string; readonly message: string }
 export const isPtyNotFoundError = (value: unknown): value is PtyNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "PtyNotFoundError"
-
-export type ForbiddenError = { readonly _tag: "ForbiddenError"; readonly message: string }
-export const isForbiddenError = (value: unknown): value is ForbiddenError =>
-  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ForbiddenError"
 
 export type ShellNotFoundError = { readonly _tag: "ShellNotFoundError"; readonly id: string; readonly message: string }
 export const isShellNotFoundError = (value: unknown): value is ShellNotFoundError =>
@@ -5241,6 +5242,20 @@ export type McpResourceCatalogInput = {
 
 export type McpResourceCatalogOutput = { location: LocationPublicRef; data: McpResourceCatalog }
 
+export type McpClientTokenInput = {
+  readonly location?: {
+    readonly location?: { readonly directory?: string | undefined } | undefined
+    readonly name: string
+  }["location"]
+  readonly name: {
+    readonly location?: { readonly directory?: string | undefined } | undefined
+    readonly name: string
+  }["name"]
+  readonly "x-opencode-ticket"?: { readonly "x-opencode-ticket"?: string | undefined }["x-opencode-ticket"]
+}
+
+export type McpClientTokenOutput = { location: LocationPublicRef; data: PtyTicketConnectToken }
+
 export type CredentialListOutput = { data: Array<CredentialEntry> }["data"]
 
 export type CredentialCreateInput = {
@@ -6034,6 +6049,8 @@ export type VcsDiffInput = {
 }
 
 export type VcsDiffOutput = { location: LocationPublicRef; data: Array<FileDiffInfo> }
+
+export type DebugHeapDumpOutput = { path: string; pid: number }
 
 export type DebugLocationListOutput = Array<LocationPublicRef>
 
