@@ -66,11 +66,6 @@ export default function Layout(props: ParentProps) {
     measure: () => measureSidebarToggles(state.tabsWidth),
     element: () => state.tabsPanel,
     offset: () => -10,
-    neighbours: () => [
-      [document.querySelector<HTMLElement>('[data-slot="session-chat-panel"]'), "center"],
-      [document.querySelector<HTMLElement>('[data-slot="session-side-panel-presence"]'), "start"],
-    ],
-    resize: () => state.tabsAside,
   })
 
   replayPanelToggle({ id: "sidebar", label: "Toggle the left sidebar", toggle: toggleSidebar })
@@ -172,6 +167,8 @@ export default function Layout(props: ParentProps) {
                 ref={(element) => setState("tabsPanel", element)}
                 class="absolute inset-0 overflow-hidden [contain:layout_style_paint]"
                 classList={{ "[content-visibility:hidden]": !sidebarMotion.present() }}
+                // Under James the sidebar keeps its landing width (start edge held) while the layout moves.
+                style={{ width: sidebarMotion.pinned() ? `${state.tabsWidth}px` : undefined }}
               >
                 <div
                   ref={(element) => setState("tabsMount", element)}
@@ -202,6 +199,8 @@ export default function Layout(props: ParentProps) {
           {/* Size containment collapses percentage-height descendants in WebKit. */}
           <main
             class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-content"
+            // Under James the sidebar stays at its landing box during a flight, under the content as the layout moves.
+            classList={{ "z-20": sidebarMotion.pinned() }}
             style={{
               "padding-top": bottomTitlebar() ? "env(safe-area-inset-top, 0px)" : "0px",
               "padding-bottom":
