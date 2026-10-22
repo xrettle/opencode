@@ -259,6 +259,76 @@ it("holds content beside the panel at its landing width for the flight, its anch
   expect(box.style.translate).toBe("")
 })
 
+it("keeps a held box's end-aligned blocks still and its centred column centred while its start edge moves", () => {
+  const box = document.createElement("div")
+  const tabs = document.createElement("div")
+  const label = document.createElement("div")
+  const column = document.createElement("div")
+  // Like the side region's tab content, the column sits in a `display: contents` wrapper, which has no box.
+  const wrapper = document.createElement("div")
+  wrapper.style.display = "contents"
+  wrapper.append(column)
+  tabs.append(label)
+  box.append(tabs, wrapper)
+  document.body.append(box)
+  cleanups.push(() => box.remove())
+  const [open, setOpen] = createSignal(false)
+  const painted = { width: 0 }
+  // The box is what the panel leaves of 1000px: its start edge moves, its end stays at 1000. Its contents lay out from
+  // its start at the held width: a tab bar across them with a 50px label at its end, and a 400px column centred in
+  // them. happy-dom has no layout.
+  const width = () => parseFloat(box.style.getPropertyValue("--panel-hold-width")) || 1000 - painted.width
+  const x = (element: HTMLElement, left: number) => left + (parseFloat(element.style.translate) || 0)
+  box.getBoundingClientRect = () => new DOMRect(painted.width, 0, 1000 - painted.width, 100)
+  tabs.getBoundingClientRect = () => new DOMRect(painted.width, 0, width(), 10)
+  label.getBoundingClientRect = () => new DOMRect(painted.width + width() - 50, 0, 50, 10)
+  column.getBoundingClientRect = () => new DOMRect(painted.width + width() / 2 - 200, 10, 400, 90)
+  // A long document: its rows run far below the box, and reading them all would stall the flight's first frame.
+  const reads = { rows: 0 }
+  Array.from({ length: 2000 }, (_, index) => {
+    const row = document.createElement("div")
+    row.getBoundingClientRect = () => (reads.rows++, new DOMRect(0, 100 + index * 20, 400, 20))
+    column.append(row)
+  })
+  createRoot((dispose) => {
+    cleanups.push(dispose)
+    holdLandingWidth(() => box, "blocks")
+    createPanelMotion({ open, paint: (shut) => (painted.width = 300 * (1 - shut)) })
+  })
+
+  const fly = () =>
+    Array.from({ length: 12 }, () => {
+      frame()
+
+      return {
+        label: x(label, painted.width + width() - 50),
+        // How far the column's centre is from the centre of the box as it is.
+        column: x(column, painted.width + width() / 2 - 200) + 200 - (painted.width + 1000) / 2,
+      }
+    })
+
+  // The box narrows: it keeps its 1000px until it lands at 700px, so it still reaches the end.
+  setOpen(true)
+  expect(reads.rows).toBeLessThan(500)
+  expect(box.style.getPropertyValue("--panel-hold-width")).toBe("1000px")
+  const narrowing = fly()
+  expect(tabs.style.translate).toBeFalsy()
+  settle()
+  // The box widens: it lays out at the 1000px it lands at from the start.
+  setOpen(false)
+  expect(box.style.getPropertyValue("--panel-hold-width")).toBe("1000px")
+  const widening = fly()
+  settle()
+
+  for (const frame of [...narrowing, ...widening]) {
+    expect(Math.abs(frame.label - 950)).toBeLessThan(0.5)
+    expect(Math.abs(frame.column)).toBeLessThan(0.5)
+  }
+
+  expect(label.style.translate).toBe("")
+  expect(column.style.translate).toBe("")
+})
+
 it("fades an opening panel in without travel under reduced motion", async () => {
   document.documentElement.dataset.motion = "reduce"
   cleanups.push(() => delete document.documentElement.dataset.motion)

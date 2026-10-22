@@ -127,7 +127,10 @@ const faded = 0.15
 /** Where a neighbour's content sits: centred content follows its box's centre, start-pinned content its start edge. */
 export type Anchor = "center" | "start"
 
-type Hold = { box: () => HTMLElement | null | undefined; anchor?: () => HTMLElement | null | undefined }
+type Hold = { box: () => HTMLElement | null | undefined; anchor?: (() => HTMLElement | null | undefined) | "blocks" }
+
+// `rest` 1 for a box laid out where it is rather than where it lands, so its shift runs from nothing to the whole.
+type Shift = { element: HTMLElement; shift: number; rest: number }
 
 type Landing = {
   /** Paints where the flight lands, then back where it is. */
@@ -145,7 +148,9 @@ const landings = new Set<Landing>()
 
 let driver: Landing | undefined
 
-let held: { box: HTMLElement; shift: number }[] = []
+let held: HTMLElement[] = []
+
+let shifted: Shift[] = []
 
 /**
  * Keeps a content box beside the panels at the width it will have once every spring flight lands, so its text wraps
@@ -154,7 +159,10 @@ let held: { box: HTMLElement; shift: number }[] = []
  * contents of a closing panel, is left to its own layout.
  *
  * `anchor` is an element inside the box whose start edge must not jump when the box takes its landing width: the box
- * shifts by the difference, with a transform, and the shift runs out over the flight.
+ * shifts by the difference, with a transform, and the shift runs out over the flight. `"blocks"` holds the box at the
+ * wider of its width now and where it lands, so it always covers its container, and moves each block in view that
+ * doesn't keep to the box's start, like a centred column or an end-aligned label, from where it was to where it lands
+ * with the flight; content at the start moves with the box's start edge.
  */
 export function holdLandingWidth(box: Hold["box"], anchor?: Hold["anchor"]) {
   const hold = { box, anchor }
@@ -172,17 +180,18 @@ function rehold(next: Landing | undefined) {
         const box = hold.box()
 
         if (!box?.isConnected) return []
-        const anchor = hold.anchor?.()
 
-        return [{ box, anchor, before: anchor ? anchorX(anchor, "start") : undefined }]
+        // The width now, which a "blocks" box keeps if it would land narrower.
+        const wide = hold.anchor === "blocks" ? box.getBoundingClientRect().width : 0
+
+        return [{ box, wide, shifts: measureAnchors(box, hold.anchor) }]
       })
     : []
 
-  held.forEach((item) => {
-    item.box.style.removeProperty("--panel-hold-width")
-    item.box.style.translate = ""
-  })
+  held.forEach((box) => box.style.removeProperty("--panel-hold-width"))
+  shifted.forEach((item) => (item.element.style.translate = ""))
   held = []
+  shifted = []
   driver = next
   driver?.begin()
 
@@ -190,25 +199,107 @@ function rehold(next: Landing | undefined) {
   flights.forEach((flight) => flight.land())
   const widths = boxes.map((item) => item.box.getBoundingClientRect().width)
   flights.forEach((flight) => flight.resume())
-  held = boxes
-    .filter((item, index) => {
-      if (widths[index] === 0) return false
-      item.box.style.setProperty("--panel-hold-width", `${widths[index]}px`)
+
+  const kept = boxes
+    .map((item, index) => ({ ...item, width: widths[index]! }))
+    .filter((item) => {
+      if (item.width === 0) return false
+      item.box.style.setProperty("--panel-hold-width", `${item.width}px`)
 
       return true
     })
-    .map((item) => ({
-      box: item.box,
-      shift: item.anchor && item.before !== undefined ? item.before - anchorX(item.anchor, "start") : 0,
-    }))
+
+  held = kept.map((item) => item.box)
+  shifted = kept.flatMap((item) => {
+    const shifts = item.shifts()
+
+    if (item.wide <= item.width) return shifts
+    item.box.style.setProperty("--panel-hold-width", `${item.wide}px`)
+
+    return shifts.map((shift) => ({ ...shift, rest: 1 }))
+  })
   shiftHeld()
 }
 
 function shiftHeld() {
   const remaining = driver?.remaining() ?? 0
-  held.forEach((item) => {
-    if (item.shift !== 0) item.box.style.translate = `${item.shift * remaining}px`
-  })
+  shifted.forEach((item) => (item.element.style.translate = `${item.shift * (remaining - item.rest)}px`))
+}
+
+// Reads where a hold's anchors start before its box takes its landing width; the returned function reads them again
+// after, and gives what moves to keep each where it was.
+function measureAnchors(box: HTMLElement, anchor: Hold["anchor"]): () => Shift[] {
+  if (anchor === "blocks") return measureBlocks(box)
+  const element = anchor?.()
+
+  if (!element) return () => []
+  const before = anchorX(element, "start")
+
+  return () => {
+    const shift = before - anchorX(element, "start")
+
+    return shift === 0 ? [] : [{ element: box, shift, rest: 0 }]
+  }
+}
+
+// The box's blocks in view, breadth first. A block that keeps its width but moves when the box changes width, like a
+// centred column or an end-aligned label, shifts by the difference, less what its ancestors already shift. A block that
+// changes width with the box keeps to the box's start; it doesn't shift, since that would move its other edge. Inline
+// boxes rewrap rather than move, and a block that also moves down has wrapped onto another line; both are left to the
+// layout, as is a block that already has its own translate. Every element read counts toward the bound, in view or not,
+// so a long document or tree costs no more than a short one; a subtree out of view is skipped whole.
+function measureBlocks(box: HTMLElement) {
+  const bounds = box.getBoundingClientRect()
+  const blocks = [{ element: box, parent: -1, left: bounds.left, right: bounds.right, top: bounds.top }]
+  let visits = 0
+
+  const visit = (element: Element, parent: number) => {
+    for (let child = element.firstElementChild; child && visits < 400; child = child.nextElementSibling) {
+      visits++
+
+      if (!(child instanceof HTMLElement)) continue
+      const rect = child.getBoundingClientRect()
+
+      // A `display: contents` wrapper has no box of its own; its children lay out in its parent's.
+      if (rect.width === 0 && rect.height === 0 && getComputedStyle(child).display === "contents") visit(child, parent)
+
+      if (rect.width === 0 || rect.bottom <= bounds.top || rect.top >= bounds.bottom) continue
+
+      if (getComputedStyle(child).display.startsWith("inline")) continue
+      blocks.push({ element: child, parent, left: rect.left, right: rect.right, top: rect.top })
+    }
+  }
+
+  for (let index = 0; index < blocks.length && visits < 400; index++) visit(blocks[index]!.element, index)
+
+  return () => {
+    const moved = blocks.map((block) => {
+      const rect = block.element.getBoundingClientRect()
+
+      return { left: block.left - rect.left, right: block.right - rect.right, top: block.top - rect.top }
+    })
+
+    // What each block's ancestors shift it by, which its own shift doesn't repeat.
+    const carried = blocks.map(() => 0)
+
+    return blocks.flatMap((block, index) => {
+      if (block.parent < 0) return []
+      const own = moved[index]!
+      carried[index] = carried[block.parent]!
+      const shift = own.left - carried[index]
+
+      if (
+        Math.abs(own.top) >= 0.5 ||
+        Math.abs(own.left - own.right) >= 0.5 ||
+        Math.abs(shift) < 0.5 ||
+        block.element.style.translate
+      )
+        return []
+      carried[index] += shift
+
+      return [{ element: block.element, shift, rest: 0 }]
+    })
+  }
 }
 
 /** Adds a button that toggles a panel to the Motion workspace's Sidebars section while the panel is mounted. */
@@ -353,6 +444,7 @@ export function createPanelMotion(input: {
             motion.snap(0)
             paint()
           }
+
           fly(true)
 
           return fadePanel(open)
@@ -421,6 +513,7 @@ export function createPanelMotion(input: {
       const start = fades.length > 0 ? { transform: now.transform, opacity: now.opacity } : open ? away : rest
       const end = open ? rest : away
       fades.forEach((animation) => animation.cancel())
+
       const current = [
         element.animate(
           { transform: [start.transform, end.transform] },
@@ -435,6 +528,7 @@ export function createPanelMotion(input: {
           },
         ),
       ]
+
       fades = current
       fading = true
       void Promise.all(current.map((animation) => animation.finished)).then(
