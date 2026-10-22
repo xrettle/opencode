@@ -4,6 +4,7 @@ import {
   createSignal,
   For,
   Index,
+  on,
   onCleanup,
   Show,
   untrack,
@@ -383,7 +384,22 @@ export function CurrentUserMessageDisplay(props: {
       el.style.setProperty("--user-run-bottom", `${value.bottom}`)
       el.toggleAttribute("data-run-meta-hidden", value.meta === 0)
     },
-    userRunSpring,
+    // Folding a meta line away is instant; the next message's line takes its place as that message grows in.
+    { ...userRunSpring, snap: folded },
+  )
+
+  // Delivery drops the Pending footer at once rather than fading it like the hover reveal.
+  createEffect(
+    on(
+      waiting,
+      (now, before) => {
+        if (now || !before || !root) return
+        const element = root
+        element.toggleAttribute("data-delivering", true)
+        requestAnimationFrame(() => element.toggleAttribute("data-delivering", false))
+      },
+      { defer: true },
+    ),
   )
 
   const copy = async (text: string) => {
