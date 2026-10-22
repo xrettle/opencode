@@ -7,10 +7,18 @@ const SHOWN = 10
 
 const Note = Schema.Struct({
   type: Schema.Literals(["feat", "fix", "perf"]),
-  scope: Schema.optional(Schema.String),
   summary: Schema.String,
   pr: Schema.optional(Schema.Number),
   sha: Schema.String,
+  author: Schema.optional(
+    Schema.Struct({
+      name: Schema.String,
+      login: Schema.optional(Schema.String),
+      avatar: Schema.optional(Schema.String),
+    }),
+  ),
+  description: Schema.optional(Schema.String),
+  visual: Schema.optional(Schema.Struct({ animated: Schema.String, still: Schema.String })),
 })
 
 /** What a beta build embeds (packages/desktop/scripts/beta-notes.ts), newest first. */
@@ -30,9 +38,15 @@ export const decodeEmbeddedNotes = Schema.decodeUnknownOption(Schema.fromJsonStr
 
 export type BetaNote = {
   readonly sha: string
+  readonly type: "feat" | "fix" | "perf"
   readonly summary: string
-  readonly scope?: string
+  /** A sentence or two from the pull request about what it does, read out for its visual. */
+  readonly description?: string
+  /** A small looping SVG of the change, from the pull request's "### Visual", sanitized at build time. */
+  readonly visual?: { readonly animated: string; readonly still: string }
   readonly pr?: { readonly number: number; readonly url: string }
+  /** Who made it, with GitHub's public avatar when the build could ask GitHub. */
+  readonly author?: { readonly name: string; readonly avatar?: string }
 }
 
 export type BetaNotes = {
@@ -81,13 +95,26 @@ export function betaBuild(version: string) {
   return version.match(/^v?0\.0\.0-(?:beta|next)-(\d+(?:\.\d+)?)$/)?.[1] ?? version
 }
 
+/**
+ * A visual as an image source. An image never runs scripts or loads anything, and does not inherit the page's colour, so
+ * `color` sets its currentColor. Reduced motion uses the still copy the build made without the animations.
+ */
+export function visualSource(visual: NonNullable<BetaNote["visual"]>, input: { color: string; still: boolean }) {
+  const svg = input.still ? visual.still : visual.animated
+
+  return `data:image/svg+xml,${encodeURIComponent(svg.replace(/<svg\b[^>]*>/i, (open) => `${open}<style>svg{color:${input.color}}</style>`))}`
+}
+
 function item(note: typeof Note.Type): BetaNote {
   const summary = note.summary.trim().replace(/\.$/, "")
 
   return {
     sha: note.sha,
+    type: note.type,
     summary: summary.charAt(0).toUpperCase() + summary.slice(1),
-    scope: note.scope,
+    description: note.description,
+    visual: note.visual,
     pr: note.pr === undefined ? undefined : { number: note.pr, url: `${REPOSITORY}/pull/${note.pr}` },
+    author: note.author && { name: note.author.name, avatar: note.author.avatar },
   }
 }
