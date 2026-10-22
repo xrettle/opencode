@@ -620,8 +620,8 @@ function HomeSessionRow(
         fallback={
           <div
             data-slot="home-session-editor"
-            class="flex h-10 min-w-0 w-full flex-1 items-center py-3 ps-1.5 pe-3 md:ps-3 md:pe-10"
-            classList={{ "gap-1.5": props.desktop, "gap-2": !props.desktop }}
+            class="flex h-10 min-w-0 w-full flex-1 items-center py-3 ps-1.5 pe-3 md:ps-3"
+            classList={{ "gap-1.5": props.desktop, "gap-2": !props.desktop, "md:pe-10": SHOW_HOME_SESSION_ARCHIVE }}
           >
             <HomeSessionLeadingController server={props.server} isOpenTab={props.isOpenTab} record={props.record} />
             <div data-slot="home-session-labels" class="contents">
@@ -678,11 +678,11 @@ function HomeSessionRow(
           aria-expanded={!!menu()}
           class={`
             flex h-10 min-w-0 w-full flex-1 shrink-0 cursor-default items-center rounded-[6px] border-0
-            bg-transparent py-3 ps-1.5 pe-3 md:ps-3 md:pe-10 text-start text-v2-text-text-muted [font-weight:530]
+            bg-transparent py-3 ps-1.5 pe-3 md:ps-3 text-start text-v2-text-text-muted [font-weight:530]
             transition-[background-color,color,box-shadow] duration-[120ms] ease-in-out
             hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
           `}
-          classList={{ "gap-1.5": props.desktop, "gap-2": !props.desktop }}
+          classList={{ "gap-1.5": props.desktop, "gap-2": !props.desktop, "md:pe-10": SHOW_HOME_SESSION_ARCHIVE }}
           onMouseDown={(event) => {
             if (event.button === 1) event.preventDefault()
           }}
