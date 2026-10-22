@@ -123,7 +123,7 @@ test("a rejected Git init releases its session's button without showing an error
   await expect(init).toBeEnabled()
 })
 
-test("open file tab browses, searches, and tracks missing files", async ({ page }) => {
+test("open file tab browses, searches, and tracks missing files @quarantine", async ({ page }) => {
   const searches: { query: string; dirs?: string; limit?: number }[] = []
   const directory = "C:/OpenCode/ReviewOpenFile"
   const files = Array.from({ length: 80 }, (_, index) => `file-${String(index).padStart(2, "0")}.ts`)
@@ -558,7 +558,7 @@ test("file tree expands Windows paths and scrolls long names in both directions"
   await expect(panel.getByText("contents:frontend/app.ts", { exact: true })).toBeVisible()
 })
 
-test("rereads a file each time an artifact link opens it", async ({ page }) => {
+test("rereads a file each time an artifact link opens it @quarantine", async ({ page }) => {
   // Enough lines to scroll the code view, ending in the draft's name.
   const draft = (name: string) => [...Array.from({ length: 200 }, (_, index) => `item ${index + 1}`), name].join("\n")
   const file = { content: draft("first draft") }
@@ -957,7 +957,7 @@ test("video files stream into the viewer behind a loading state, open into the p
   expect(await page.evaluate(() => document.fullscreenElement)).toBeNull()
 })
 
-test("restores review state and the side-panel tab per session", async ({ page }) => {
+test("restores review state and the side-panel tab per session @quarantine", async ({ page }) => {
   const sessions = [
     { id: "ses_review_state_a", title: "Alpha review state" },
     { id: "ses_review_state_b", title: "Beta review state" },

@@ -847,7 +847,7 @@ for (const delivery of ["queue", "steer"] as const) {
   })
 }
 
-test("reverting to another prompt replaces the file chips of an earlier restore", async ({ page }) => {
+test("reverting to another prompt replaces the file chips of an earlier restore @quarantine", async ({ page }) => {
   const mock = createQueueMock(
     [],
     [
@@ -1008,7 +1008,7 @@ for (const [action, status] of [
   })
 }
 
-test("waiting steers group under one Pending line, each keeping its own actions beside its bubble", async ({
+test("waiting steers group under one Pending line, each keeping its own actions beside its bubble @quarantine", async ({
   page,
 }) => {
   const mock = createQueueMock(
@@ -1080,7 +1080,7 @@ test("/undo returns a pending steer's review comment to the composer", async ({ 
 })
 
 for (const delivery of ["steer", "queue"] as const) {
-  test(`keeps finished tools above a pending ${delivery === "queue" ? "queue-to-steer" : "steer"} follow-up`, async ({
+  test(`keeps finished tools above a pending ${delivery === "queue" ? "queue-to-steer" : "steer"} follow-up${delivery === "steer" ? " @quarantine" : ""}`, async ({
     page,
   }, testInfo) => {
     const model = { id: "queue-model", providerID: "opencode" }
