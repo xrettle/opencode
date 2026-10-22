@@ -34,6 +34,8 @@ export default {
   "beta.since.other": "Since build {{build}} · {{count}} changes",
   "beta.added": "New",
   "beta.fixed": "Fixes",
-  "beta.viewAll": "View all on GitHub",
+  "beta.viewAll": "View all",
+  "beta.page.description": "Every change in this build.",
+  "beta.github": "History on GitHub",
   "beta.done": "Got it",
 }
