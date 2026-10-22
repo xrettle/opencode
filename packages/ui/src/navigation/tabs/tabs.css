@@ -512,12 +512,9 @@
       padding: 0 !important;
     }
 
+    /* The 20px close button sits 4px from the tab's end, as from its top and bottom. */
     &:has([data-slot="tabs-trigger-close-button"]) {
-      padding-inline-end: 8px;
-
-      [data-slot="tabs-trigger-close-button"] {
-        margin-inline-start: 2px;
-      }
+      padding-inline-end: 4px;
     }
 
     &:has([data-selected]) {

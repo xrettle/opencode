@@ -274,7 +274,6 @@ const setup: Setup<typeof File> = (ctx) => {
       </div>
     ),
     draggable: false,
-    closable: "hover",
     transient: true,
     group: GROUP,
     dom: { panel: TABPANEL },

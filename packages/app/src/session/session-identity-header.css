@@ -34,17 +34,13 @@
     padding-inline: 4px;
   }
 
-  .session-header-location [data-component="project-avatar-v2"] {
-    margin-inline-end: 2px;
-  }
-
-  /* The avatar-only trigger sits 4px from its avatar and the row adds a 4px gap; the avatar's 2px margin counts too. */
+  /* The avatar-only trigger sits 4px from its avatar on every side, and the row adds a 4px gap. */
   .session-header-location > .session-header-separator {
-    --separator-before: 10px;
+    --separator-before: 8px;
   }
 
   .session-header-location > .session-header-separator:dir(rtl) {
-    --separator-before: 9px;
+    --separator-before: 7px;
   }
 
   /* The collapsed header reads avatar, separator, title; the names stay in the trigger's title and accessible name. */
