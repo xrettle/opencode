@@ -112,6 +112,10 @@ export interface ComposerStateValue {
     replace(items: ContextItem[]): void
     replaceComments(items: ContextItem[]): void
   }
+  readonly quoteComment: {
+    readonly key: Accessor<string | undefined>
+    readonly set: (key?: string) => void
+  }
   readonly set: (prompt: Prompt, cursorPosition?: number) => void
   readonly reset: () => void
   readonly capture: () => ComposerStateValue
