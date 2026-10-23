@@ -111,6 +111,7 @@ export function createSessionRequestModel() {
 
   // Moving to the background and the extensions' background list stay with the primary session's own work.
   const blocking = createMemo(() => (primary() ? running.blocking() : []))
+  const subagents = createMemo(() => (primary() ? running.subagents() : []))
   const tasks = createMemo(() => (primary() ? running.tasks() : []))
 
   const moveToBackground = async () => {
@@ -171,6 +172,7 @@ export function createSessionRequestModel() {
     permissionResponding,
     background: {
       blocking,
+      subagents,
       tasks,
       move: moveToBackground,
       steer,

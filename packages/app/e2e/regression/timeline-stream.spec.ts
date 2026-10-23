@@ -829,6 +829,18 @@ test.describe("Working", () => {
             { completed: false },
           ),
         ],
+        shellCommands: [
+          {
+            id: "sh_working_background",
+            status: "running",
+            command: "sleep 10",
+            cwd: directory,
+            shell: "bash",
+            file: "/tmp/working-background.out",
+            metadata: { sessionID },
+            time: { started: 2 },
+          },
+        ],
       })
       const working = page.locator('[data-component="session-working"]')
 
@@ -998,6 +1010,18 @@ test.describe("background shortcut", () => {
             time: { created: 2, completed: 3 },
           },
         ],
+        shellCommands: [
+          {
+            id: "shell_backgrounded",
+            status: "running",
+            command: "sleep 120",
+            cwd: directory,
+            shell: "bash",
+            file: "/tmp/background.out",
+            metadata: { sessionID },
+            time: { started: 2 },
+          },
+        ],
       })
 
       // The open menu hides the rest of the page from the accessibility tree, the capsule included.
@@ -1028,6 +1052,50 @@ test.describe("background shortcut", () => {
         .toBe(true)
     })
   }
+
+  test("counts a backgrounded subagent while its session runs, not while its call still reads running", async ({
+    page,
+  }) => {
+    const childID = "ses_background_stale_call"
+
+    // As after a lost completion notice: the call still reads running, while the child session has finished.
+    const timeline = await setupTimeline(page, {
+      settings: { timelineDetail: detailed },
+      sessionMessages: [
+        user,
+        {
+          id: "msg_stale_call",
+          type: "assistant",
+          agent: "build",
+          model: { id: "model", providerID: "provider" },
+          content: [
+            {
+              type: "tool",
+              id: "call_stale",
+              name: "subagent",
+              state: {
+                status: "completed",
+                input: { description: "Stale task", agent: "explore", background: true },
+                content: [{ type: "text", text: "working" }],
+                metadata: { sessionID: childID, status: "running" },
+              },
+              time: { created: 2, completed: 3 },
+            },
+          ],
+          time: { created: 2, completed: 3 },
+        },
+      ],
+      sessions: [session(), session({ id: childID, parentID: sessionID, title: "Stale task", agent: "explore" })],
+    })
+    const capsule = page.locator('[data-slot="session-activity-chip"]')
+
+    await expect(page.locator('[data-timeline-part-id="call_stale"]')).toContainText("Stale task (background)")
+    await expect(capsule).toHaveCount(0)
+    await timeline.transport.send(status("busy", 1, childID))
+    await expect(page.getByRole("button", { name: "1 subagent", exact: true })).toBeVisible()
+    await timeline.transport.send(status("idle", 1, childID))
+    await expect(capsule).toHaveCount(0)
+  })
 
   test("separates blocking and already-backgrounded work into two rows", async ({ page }) => {
     const backgroundID = "ses_background_existing"

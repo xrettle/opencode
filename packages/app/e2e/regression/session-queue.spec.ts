@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test"
-import type { OpenCodeEvent, SessionInboxInfo, SessionMessageInfo } from "@opencode/client/promise"
+import type { OpenCodeEvent, SessionInboxInfo, SessionMessageInfo, ShellInfo } from "@opencode/client/promise"
 import { PromptInput } from "@opencode/schema/prompt-input"
 import { SessionInbox } from "@opencode/schema/session-inbox"
 import { SessionMessage } from "@opencode/schema/session-message"
@@ -65,6 +65,8 @@ function createQueueMock(seed: string[], messages: SessionMessageInfo[] = []) {
   const compactions: SessionInboxInfo[] = []
   const changes: { inboxID: string; action: "cancel" | "steer" | "queue" }[] = []
   const log: string[] = []
+  // Live background shell commands (`GET /api/shell`).
+  const shells: ShellInfo[] = []
   let sequence = 0
 
   const emit = <Type extends OpenCodeEvent["type"]>(
@@ -89,6 +91,7 @@ function createQueueMock(seed: string[], messages: SessionMessageInfo[] = []) {
     changes,
     log,
     messages,
+    shells,
     emit,
     events: () => events.splice(0),
     onPrompt: (input: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]) => {
@@ -184,6 +187,7 @@ async function openQueue(
     onCompact: mock.onCompact,
     onInboxChange: mock.onInboxChange,
     onBackground: mock.onBackground,
+    shellCommands: () => mock.shells,
     events: mock.events,
   }
 
@@ -1324,6 +1328,17 @@ test("a steer moves a blocking shell to the background after its admission, so t
     ],
   )
 
+  // The command is live from its start; its blocking call keeps it out of the background until the move.
+  mock.shells.push({
+    id: "sh_steer_background",
+    status: "running",
+    command: "bun test --timeout 600000",
+    cwd: "C:/OpenCode/SessionQueueRegression",
+    shell: "bash",
+    file: "/tmp/steer-background.out",
+    metadata: { sessionID },
+    time: { started: 1700000000002 },
+  })
   const view = await openQueue(page, mock, "steer", undefined, "running", { id: "alpha", name: "Alpha" })
   const transcript = page.locator("[data-timeline-virtual-content]")
   const hint = page.getByRole("button", { name: /move running work to the background/i })

@@ -378,35 +378,15 @@ export function ActiveSessionComposerRegion(props: {
     return { directory: info.location.directory, sessionID: info.id, projectID: info.projectID }
   })
 
-  // Subagents count while their call still blocks the run; foreground shells stay out, the timeline shows them.
-  const subagents = createMemo<SessionActivityItem[]>(() => [
-    ...props.model.region.state.background.blocking().flatMap((task) =>
-      task.type === "subagent"
-        ? [
-            {
-              ...task,
-              key: task.id ?? task.partID,
-              agent: task.id ? data.session.get(task.id)?.agent : undefined,
-              sessionID: task.id,
-              target: task.partID,
-            },
-          ]
-        : [],
-    ),
-    ...props.model.region.state.background.tasks().flatMap((task) =>
-      task.type === "subagent"
-        ? [
-            {
-              ...task,
-              key: task.id,
-              agent: task.agent ?? data.session.get(task.id)?.agent,
-              sessionID: task.id,
-              target: task.id,
-            },
-          ]
-        : [],
-    ),
-  ])
+  // Subagents count while their session runs, or while their blocking call waits for its child session.
+  const subagents = createMemo<SessionActivityItem[]>(() =>
+    props.model.region.state.background.subagents().map((task) => ({
+      ...task,
+      agent: task.agent ?? (task.sessionID ? data.session.get(task.sessionID)?.agent : undefined),
+      key: task.id,
+      target: task.partID ?? task.id,
+    })),
+  )
 
   const shells = createMemo<SessionActivityItem[]>(() =>
     props.model.region.state.background
