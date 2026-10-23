@@ -11,6 +11,45 @@ export const sidebarPeekEnabled = motionTuning.toggle("sidebar.peek", {
   value: true,
 })
 
+const peekKnobs = { group: "Experiments", when: sidebarPeekEnabled }
+
+// "Matched" slides the peek on the docked sidebar's own spring instead of its quicker one.
+const peekMatched = motionTuning.toggle("sidebar.peek.matched", {
+  ...peekKnobs,
+  label: "Peek matches sidebar spring",
+  value: false,
+})
+
+const peekSpring = motionTuning.spring("sidebar.peek.spring", {
+  ...peekKnobs,
+  label: "Peek spring",
+  when: () => sidebarPeekEnabled() && !peekMatched(),
+  shipped: "smooth",
+  presets: {
+    snappy: { duration: 0.12, bounce: 0 },
+    smooth: { duration: 0.18, bounce: 0 },
+    calm: { duration: 0.3, bounce: 0 },
+  },
+})
+
+const dwellKnob = (from: "edge" | "toggle", label: string, value: number) =>
+  motionTuning.number(`sidebar.peek.dwell.${from}`, {
+    ...peekKnobs,
+    label,
+    value,
+    min: 0,
+    max: 300,
+    step: 5,
+    unit: "ms",
+  })
+
+// How long the pointer rests before the sidebar peeks, in ms. Both sit well under the ~100ms where a response still
+// reads as immediate, and above how long a pointer spends crossing: through the ~24px edge zone in a frame or two,
+// over the 28px toggle in ~30–60ms on the way to the breadcrumb or the traffic lights. The toggle waits longer because
+// the header row is crossed far more often than the bare window edge, and a peek that starts just before a click docks
+// smoothly. Both are tunable in Knobs → Experiments.
+const dwell = { edge: dwellKnob("edge", "Peek edge dwell", 40), toggle: dwellKnob("toggle", "Peek toggle dwell", 80) }
+
 /** Whether any session in the vertical sidebar draws its unread dot, published by the sidebar's tab strip. */
 export const [sidebarUnread, setSidebarUnread] = createSignal(false)
 
@@ -21,16 +60,21 @@ const menus = '[data-component="menu-v2-content"], [role="menu"]'
 // A drag in progress, or a dialog over the app, which no peek should open under.
 const busy = '[data-dragging="true"], [role="dialog"], [role="alertdialog"]'
 
-// How long the pointer rests before the sidebar peeks, in ms. Both sit under the ~100–150ms where a response still reads
-// as immediate, and above how long a pointer spends crossing: through the 8px edge strip in well under a frame, over the
-// 28px toggle in ~30–60ms on the way to the breadcrumb or the traffic lights. The toggle waits longer because the header
-// row is crossed far more often than the bare window edge, and a peek that starts just before a click docks smoothly.
-const dwell = { edge: 100, toggle: 150 }
+// The zone along the window's start edge that peeks the sidebar: the shell's 8px frame gutter, outside the content's
+// card, plus a tunable reach into the content. It only reads where the pointer is, so clicks, scrollbars and text
+// selection under it work as usual, and a held button never peeks. It starts below the session header's 56px band,
+// which holds the traffic lights and the toggle.
+const gutter = 8
 
-// The strip along the window's start edge that peeks the sidebar: the shell's 8px frame gutter, outside the content's
-// card, so no control, scrollbar or text lives in it. It starts below the session header's 56px band, which holds the
-// traffic lights and the toggle.
-const edge = 8
+const edgeZone = motionTuning.number("sidebar.peek.edgeZone", {
+  ...peekKnobs,
+  label: "Edge zone",
+  value: 16,
+  min: 0,
+  max: 48,
+  step: 1,
+  unit: "px",
+})
 
 const header = 56
 
@@ -48,8 +92,9 @@ type Box = { left: number; right: number; top: number; bottom: number }
 
 /**
  * Experiment: while the left sidebar is closed, resting the pointer on the window's start edge or on the sidebar's
- * toggle slides the real sidebar in over the app without moving the layout, on the docked sidebar's own spring and in
- * its own box. Docking from a peek continues from where it is: the sidebar stays and the layout makes room.
+ * toggle slides the real sidebar in over the app without moving the layout, on a quicker spring than the docked
+ * sidebar's and in its own box. Docking from a peek continues from where it is: the sidebar stays, finishing its slide on
+ * the peek's spring, and the layout makes room on the docked sidebar's.
  *
  * The peek holds while the pointer stays within the box spanning the toggle and the sidebar, plus a margin, so the way
  * from the toggle into the sidebar never closes it. Closing reads the pointer's last known position on every move,
@@ -86,7 +131,7 @@ export function createSidebarPeek(input: {
   // Whether the sidebar last docked from a peek, which already shows it.
   let handedOff = false
   let viewport = window.innerWidth
-  // Where the edge strip starts, and the box spanning the toggle and the sidebar, until the layout next changes.
+  // Where the edge zone starts, and the box spanning the toggle and the sidebar, until the layout next changes.
   let edgeTop: number | undefined
   let corridor: Box | undefined
 
@@ -106,7 +151,7 @@ export function createSidebarPeek(input: {
 
   // Retargeting keeps the current position and velocity, so a peek that turns around mid-flight stays smooth.
   const run = (target: number) => {
-    const tuning = prefersReducedMotion() ? fade : panelSpring()
+    const tuning = prefersReducedMotion() ? fade : peekMatched() ? panelSpring() : peekSpring()
     motion.omega = (2 * Math.PI) / tuning.duration
     motion.zeta = 1 - tuning.bounce
     motion.set(target)
@@ -181,7 +226,7 @@ export function createSidebarPeek(input: {
         opening = undefined
 
         if (enabled() && input.available() && !interrupted() && still()) show()
-      }, dwell[from]),
+      }, dwell[from]()),
     }
   }
 
@@ -231,6 +276,8 @@ export function createSidebarPeek(input: {
 
   const atEdge = (point: Point) => {
     const rtl = document.documentElement.dir === "rtl"
+
+    const edge = gutter + edgeZone()
 
     if (rtl ? point.x < viewport - edge : point.x > edge) return false
     edgeTop ??= (input.aside()?.getBoundingClientRect().top ?? Infinity) + header
@@ -370,7 +417,7 @@ export function createSidebarPeek(input: {
     const aside = input.aside()
 
     if (!aside) return
-    // A titlebar or panel that moves the sidebar's row changes where the edge strip starts.
+    // A titlebar or panel that moves the sidebar's row changes where the edge zone starts.
     const observer = new ResizeObserver(relayout)
     observer.observe(aside.parentElement ?? aside)
     onCleanup(() => observer.disconnect())
