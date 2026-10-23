@@ -584,39 +584,61 @@ test("the location dialog lists every ready server's projects in one list and ta
   const search = dialog.getByRole("combobox")
   await expect(search).toBeFocused()
   const options = dialog.getByRole("option")
+  const rows = dialog.locator(".command-palette-results").getByRole("option")
+  const add = options.filter({ hasText: "Add project" })
   const names = options.locator(".new-session-location-name")
   const paths = options.locator(".command-palette-description")
   const chip = dialog.getByRole("button", { name: "Back to projects", exact: true })
   // Used projects first, then the rest, each by recent activity across servers; only remote ones carry a tag.
   await expect(names).toHaveText(["opencodeapollo", "opencode", "console", "sstapollo"])
   await expect(paths).toHaveText(["/home/dax/opencode", "C:/work/opencode", "C:/work/console", "/home/dax/sst"])
-  await expect(options.last()).toHaveText("Add project")
-  // It opens on the first row, not on the draft's current project (the second row).
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  // "Add project" is pinned above the scrolling list and its heading, yet the first project is still the opening row,
+  // not the draft's current project (the second row).
+  await expect(options.first()).toHaveText("Add project")
+  await expect(rows).toHaveCount(4)
+  await expect
+    .poll(async () => {
+      const row = await add.boundingBox()
+      const heading = await dialog.getByText("Projects", { exact: true }).boundingBox()
+
+      return row && heading ? row.y + row.height <= heading.y : false
+    })
+    .toBe(true)
+  await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
 
   // The picker shares the palette's full-width search, compact rows, and single-line titles.
-  await expect(options.nth(0)).toHaveCSS("height", "36px")
-  await expect(options.nth(0)).toHaveCSS("display", "flex")
+  await expect(rows.nth(0)).toHaveCSS("height", "36px")
+  await expect(rows.nth(0)).toHaveCSS("display", "flex")
   await expect(names.nth(0).locator(".command-palette-title")).toHaveCSS("font-size", "13px")
   await expect(names.nth(0).locator(".command-palette-title")).toHaveCSS("white-space", "nowrap")
-  await expect(options.nth(0)).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+  await expect(rows.nth(0)).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+  // The pinned row shares the list's width and icon column.
   await expect
     .poll(async () => {
       const field = await dialog.locator('[data-component="text-input-v2"]').boundingBox()
-      const row = await options.nth(0).boundingBox()
+      const row = await rows.nth(0).boundingBox()
+      const pinned = await add.boundingBox()
+      const icon = await add.locator(".command-palette-row-icon").boundingBox()
+      const avatar = await rows.nth(0).locator('[data-component="project-avatar-v2"]').boundingBox()
 
-      return field && row ? Math.abs(field.width - row.width) : Infinity
+      return field && row && pinned && icon && avatar
+        ? Math.max(Math.abs(field.width - row.width), Math.abs(pinned.width - row.width), Math.abs(icon.x - avatar.x))
+        : Infinity
     })
     .toBeLessThanOrEqual(1)
 
+  // Searching narrows the projects and keeps "Add project" pinned.
   await search.fill("apollo")
   await expect(names).toHaveText(["opencodeapollo", "sstapollo"])
+  await expect(add).toBeVisible()
 
   // The worktree step keeps the server's tag beside the project.
   await search.fill("opencode")
   await expect(paths).toHaveText(["/home/dax/opencode", "C:/work/opencode"])
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
   await page.keyboard.press("ArrowRight")
+  // The worktree step has no "Add project".
+  await expect(add).toHaveCount(0)
   await expect(chip).toContainText("opencode")
   await expect(chip.locator('[data-component="tag"]')).toHaveText("apollo")
   await expect(options.locator(".command-palette-title")).toHaveText(["opencode", "New worktree", "opencode-beta"])
@@ -632,13 +654,17 @@ test("the location dialog lists every ready server's projects in one list and ta
     .toBeLessThanOrEqual(0.5)
   await page.keyboard.press("Backspace")
   await expect(search).toHaveValue("opencode")
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
 
-  // Adding a project picks one of the ready servers first, then browses that server.
+  // ArrowUp from the first project reaches the pinned row above it; adding a project picks one of the ready servers
+  // first, then browses that server.
   await search.fill("")
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true")
+  await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
   await page.keyboard.press("ArrowUp")
-  await expect(options.nth(4)).toHaveAttribute("aria-selected", "true")
+  await expect(add).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ArrowDown")
+  await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
+  await page.keyboard.press("ArrowUp")
   await page.keyboard.press("ArrowRight")
   await expect(chip).toHaveText("Add project")
   // The server the app runs beside shows its hostname and "This computer" instead of its address.
