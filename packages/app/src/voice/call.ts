@@ -22,7 +22,7 @@ export type CallState = {
 type Delegation = {
   id: string
   sessionID: string
-  voice: string
+  transcript: string[]
   calls: ToolCall[]
   rounds: number
   responseID?: string
@@ -32,15 +32,23 @@ export function createVoiceCall(input: {
   ctx: ServerCtx
   session: SessionInfo
   platform: Platform
-  open: (session: SessionInfo) => void
+  /** Shows the session on screen; rejects unless the route really changed. */
+  open: (session: SessionInfo, signal: AbortSignal) => Promise<void>
+  /** Session IDs with an open tab. */
+  tabs: () => string[]
   change: (state: Partial<CallState>) => void
 }) {
   const tail = new TranscriptTail()
   let gates = new VoiceGates()
 
-  const tools = new VoiceTools(input.ctx, (session) => {
-    view(session)
-    input.open(session)
+  const tools = new VoiceTools(input.ctx, {
+    open: async (session, signal) => {
+      await input.open(session, signal)
+      // A call that ended or dropped mid-open must not take over the view.
+      signal.throwIfAborted()
+      view(session)
+    },
+    tabs: input.tabs,
   })
 
   const state: {
@@ -166,7 +174,7 @@ export function createVoiceCall(input: {
       const id = event.delegation.id
 
       if (delegations.has(id)) return
-      delegations.set(id, { id, sessionID: state.viewing.id, voice: tail.capture(id), calls: [], rounds: 0 })
+      delegations.set(id, { id, sessionID: state.viewing.id, transcript: tail.capture(id), calls: [], rounds: 0 })
 
       return
     }
