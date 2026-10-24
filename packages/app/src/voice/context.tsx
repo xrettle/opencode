@@ -15,14 +15,19 @@ export const { provider: VoiceProvider, use: useVoice } = createSimpleContext({
     const platform = usePlatform()
     const navigate = useNavigate()
 
-    const [state, setState] = createStore<CallState & { server?: ServerConnection.Key; composers: number }>({
+    const [state, setState] = createStore<
+      CallState & {
+        server?: ServerConnection.Key
+        captions: { utterance: number; speaker: CallState["speaker"]; text: string }[]
+      }
+    >({
       status: "idle",
       muted: false,
       level: 0,
       caption: "",
       speaker: "assistant",
       title: "",
-      composers: 0,
+      captions: [],
     })
 
     const current: { call?: ReturnType<typeof createVoiceCall>; generation: number } = { generation: 0 }
@@ -34,7 +39,7 @@ export const { provider: VoiceProvider, use: useVoice } = createSimpleContext({
       await call?.end()
 
       if (current.generation === generation)
-        setState({ status: "idle", server: undefined, caption: "", level: 0, muted: false })
+        setState({ status: "idle", server: undefined, caption: "", captions: [], level: 0, muted: false })
     }
 
     const unload = () => {
@@ -49,14 +54,22 @@ export const { provider: VoiceProvider, use: useVoice } = createSimpleContext({
       void end()
     })
 
+    // The call reports each utterance as it grows: its line is extended in place, and the next utterance starts a
+    // new one.
+    const caption = (change: Partial<CallState>) => {
+      const text = change.caption
+      const utterance = change.utterance
+
+      if (!text || utterance === undefined) return
+      const last = state.captions.length - 1
+
+      if (state.captions[last]?.utterance === utterance) return setState("captions", last, "text", text)
+      setState("captions", (list) => [...list, { utterance, speaker: state.speaker, text }].slice(-4))
+    }
+
     return {
       state,
       end,
-      mountComposer() {
-        setState("composers", (count) => count + 1)
-
-        return () => setState("composers", (count) => count - 1)
-      },
       mute: () => current.call?.mute(),
       rejoin: () => current.call?.join(),
       view(server: ServerConnection.Key, session: SessionInfo) {
@@ -65,7 +78,14 @@ export const { provider: VoiceProvider, use: useVoice } = createSimpleContext({
       async start(server: ServerConnection.Key, ctx: ServerCtx, session: SessionInfo) {
         if (state.status !== "idle") return
         const generation = ++current.generation
-        setState({ status: "connecting", server, title: session.title ?? session.id, failure: undefined })
+        setState({
+          status: "connecting",
+          server,
+          title: session.title ?? session.id,
+          failure: undefined,
+          caption: "",
+          captions: [],
+        })
         await import("./call")
           .then(async ({ createVoiceCall }) => {
             if (current.generation !== generation) return
@@ -75,7 +95,9 @@ export const { provider: VoiceProvider, use: useVoice } = createSimpleContext({
               platform,
               open: (next) => navigate(sessionHref(server, next.id)),
               change: (change) => {
-                if (current.generation === generation) setState(change)
+                if (current.generation !== generation) return
+                setState(change)
+                caption(change)
               },
             })
             await current.call.join()
