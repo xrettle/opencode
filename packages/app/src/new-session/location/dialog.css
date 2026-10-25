@@ -66,19 +66,3 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.new-session-location-list {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-/* "Add project" stays above the scrolling project list. */
-.new-session-location-pinned {
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  padding: 0 6px 6px;
-  border-bottom: 0.5px solid var(--v2-border-border-muted);
-}
