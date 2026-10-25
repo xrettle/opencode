@@ -2367,6 +2367,7 @@ export type ConfigEntry =
           portable_shell_scanner?: boolean
           todo?: boolean
           background_compaction?: boolean
+          media_blob?: boolean
           subagent_depth?: number
           location_idle_timeout?: string | false
           policies?: Array<{
