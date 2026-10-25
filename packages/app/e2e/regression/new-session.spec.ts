@@ -589,19 +589,20 @@ test("the location dialog lists every ready server's projects in one list and ta
   const names = options.locator(".new-session-location-name")
   const paths = options.locator(".command-palette-description")
   const chip = dialog.getByRole("button", { name: "Back to projects", exact: true })
+  const heading = dialog.getByText("Projects", { exact: true })
   // Used projects first, then the rest, each by recent activity across servers; only remote ones carry a tag.
   await expect(names).toHaveText(["opencodeapollo", "opencode", "console", "sstapollo"])
   await expect(paths).toHaveText(["/home/dax/opencode", "C:/work/opencode", "C:/work/console", "/home/dax/sst"])
-  // "Add project" is the first row of the scrolling list, under its heading, yet the first project is still the
-  // opening row, not the draft's current project (the second row).
+  // "Add project" is the first row of the scrolling list, above the Projects heading, yet the first project is still
+  // the opening row, not the draft's current project (the second row).
   await expect(dialog.locator("[data-scrollable]").getByRole("option").first()).toHaveText("Add project")
   await expect(rows).toHaveCount(4)
   await expect
     .poll(async () => {
       const row = await add.boundingBox()
-      const heading = await dialog.getByText("Projects", { exact: true }).boundingBox()
+      const title = await heading.boundingBox()
 
-      return row && heading ? row.y >= heading.y + heading.height : false
+      return row && title ? row.y + row.height <= title.y : false
     })
     .toBe(true)
   await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
@@ -634,6 +635,7 @@ test("the location dialog lists every ready server's projects in one list and ta
   await search.fill("nothing matches")
   await expect(options).toHaveText(["Add project"])
   await expect(add).toHaveAttribute("aria-selected", "true")
+  await expect(heading).toHaveCount(0)
 
   // The worktree step keeps the server's tag beside the project.
   await search.fill("opencode")

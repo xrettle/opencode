@@ -123,8 +123,9 @@ function NewSessionLocationDialog(props: {
 
   const addEntry: LocationEntry = { id: "add", type: "add" }
 
-  // Remote projects also match their server's name, which their tag shows. "Add project" is listed first but navigates
-  // last, so the first project stays the opening row and the arrow keys' wrap-around still follows the rows on screen.
+  // Remote projects also match their server's name, which their tag shows. "Add project" is shown first, above the
+  // heading, but navigates last, so the first project stays the opening row and the arrow keys' wrap-around still
+  // follows the rows on screen.
   const projectEntries = createMemo<LocationEntry[]>(() => [
     ...props.project
       .projects()
@@ -168,7 +169,7 @@ function NewSessionLocationDialog(props: {
 
   const drillable = (project: PromptProject) => !props.projectsOnly && !!project.id && project.vcs === "git"
 
-  const rows = () => (entries().at(-1) === addEntry ? [addEntry, ...entries().slice(0, -1)] : entries())
+  const grouped = () => entries().filter((entry) => entry !== addEntry)
 
   const title = () => {
     if (store.drilled) return language.t("session.new.workspace.runIn")
@@ -307,6 +308,72 @@ function NewSessionLocationDialog(props: {
     typeahead.onKeyDown(event)
   }
 
+  const option = (entry: LocationEntry) => (
+    <button
+      type="button"
+      id={typeahead.optionID(entry)}
+      class="command-palette-row palette-menu-row"
+      role="option"
+      aria-selected={activeEntry()?.id === entry.id}
+      data-active={activeEntry()?.id === entry.id ? "" : undefined}
+      onMouseMove={(event) => {
+        // Ignore hover from a static cursor when keyboard scrolling moves rows underneath it.
+        if (event.movementX === 0 && event.movementY === 0) return
+        typeahead.setActive(entry.id)
+      }}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => choose(entry)}
+    >
+      <Switch>
+        <Match when={entry.type === "project" && entry}>
+          {(item) => (
+            <ProjectRow
+              project={item().project}
+              path={item().project.worktree}
+              onDrill={drillable(item().project) ? () => drill(item().project) : undefined}
+              drillLabel={language.t("session.new.location.worktrees")}
+            />
+          )}
+        </Match>
+        <Match when={entry.type === "add"}>
+          <div class="command-palette-row-main">
+            <Icon name="plus" class="command-palette-row-icon" />
+            <div class="command-palette-row-text">
+              <span class="command-palette-title palette-menu-title">{language.t("session.new.project.add")}</span>
+            </div>
+          </div>
+          <Show when={choosesServer()}>
+            <DrillButton label={language.t("session.new.location.servers")} onDrill={pick} />
+          </Show>
+        </Match>
+        <Match when={entry.type === "server" && entry}>
+          {(item) => (
+            <div class="command-palette-row-main">
+              <Icon name={serverIcon(item().server)} class="command-palette-row-icon" />
+              <div class="command-palette-row-text">
+                <span class="command-palette-title palette-menu-title">{item().server.name}</span>
+                <Show when={item().server.hint}>
+                  {(hint) => <span class="command-palette-description">{hint()}</span>}
+                </Show>
+              </div>
+            </div>
+          )}
+        </Match>
+        <Match when={entry.type === "workspace" && store.drilled && entry}>
+          {(item) => (
+            <WorkspaceRow
+              title={workspaceTitle(store.drilled!, item().value)}
+              value={item().value}
+              description={
+                item().value === "create" ? language.t("session.new.workspace.new.tooltip") : item().directory
+              }
+            />
+          )}
+        </Match>
+      </Switch>
+    </button>
+  )
+
   return (
     <Dialog class="command-palette" size="large">
       <DialogBody class="command-palette-body">
@@ -356,7 +423,7 @@ function NewSessionLocationDialog(props: {
         <div class="command-palette-scroll" data-scrollable ref={(el) => (resultsRef = el)}>
           <div id={typeahead.listID} class="command-palette-results" role="listbox">
             <Show
-              when={rows().length > 0}
+              when={entries().length > 0}
               fallback={
                 // The worktree list may still be loading; hold the row's height without flashing a label.
                 <div class="command-palette-state" classList={{ invisible: !!store.drilled && listed.loading }}>
@@ -364,80 +431,13 @@ function NewSessionLocationDialog(props: {
                 </div>
               }
             >
-              <div class="command-palette-group">
-                <div class="command-palette-group-title">{title()}</div>
-                <For each={rows()}>
-                  {(entry) => (
-                    <button
-                      type="button"
-                      id={typeahead.optionID(entry)}
-                      class="command-palette-row palette-menu-row"
-                      role="option"
-                      aria-selected={activeEntry()?.id === entry.id}
-                      data-active={activeEntry()?.id === entry.id ? "" : undefined}
-                      onMouseMove={(event) => {
-                        // Ignore hover from a static cursor when keyboard scrolling moves rows underneath it.
-                        if (event.movementX === 0 && event.movementY === 0) return
-                        typeahead.setActive(entry.id)
-                      }}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => choose(entry)}
-                    >
-                      <Switch>
-                        <Match when={entry.type === "project" && entry}>
-                          {(item) => (
-                            <ProjectRow
-                              project={item().project}
-                              path={item().project.worktree}
-                              onDrill={drillable(item().project) ? () => drill(item().project) : undefined}
-                              drillLabel={language.t("session.new.location.worktrees")}
-                            />
-                          )}
-                        </Match>
-                        <Match when={entry.type === "add"}>
-                          <div class="command-palette-row-main">
-                            <Icon name="plus" class="command-palette-row-icon" />
-                            <div class="command-palette-row-text">
-                              <span class="command-palette-title palette-menu-title">
-                                {language.t("session.new.project.add")}
-                              </span>
-                            </div>
-                          </div>
-                          <Show when={choosesServer()}>
-                            <DrillButton label={language.t("session.new.location.servers")} onDrill={pick} />
-                          </Show>
-                        </Match>
-                        <Match when={entry.type === "server" && entry}>
-                          {(item) => (
-                            <div class="command-palette-row-main">
-                              <Icon name={serverIcon(item().server)} class="command-palette-row-icon" />
-                              <div class="command-palette-row-text">
-                                <span class="command-palette-title palette-menu-title">{item().server.name}</span>
-                                <Show when={item().server.hint}>
-                                  {(hint) => <span class="command-palette-description">{hint()}</span>}
-                                </Show>
-                              </div>
-                            </div>
-                          )}
-                        </Match>
-                        <Match when={entry.type === "workspace" && store.drilled && entry}>
-                          {(item) => (
-                            <WorkspaceRow
-                              title={workspaceTitle(store.drilled!, item().value)}
-                              value={item().value}
-                              description={
-                                item().value === "create"
-                                  ? language.t("session.new.workspace.new.tooltip")
-                                  : item().directory
-                              }
-                            />
-                          )}
-                        </Match>
-                      </Switch>
-                    </button>
-                  )}
-                </For>
-              </div>
+              <Show when={entries().includes(addEntry)}>{option(addEntry)}</Show>
+              <Show when={grouped().length > 0}>
+                <div class="command-palette-group">
+                  <div class="command-palette-group-title">{title()}</div>
+                  <For each={grouped()}>{option}</For>
+                </div>
+              </Show>
             </Show>
           </div>
         </div>
