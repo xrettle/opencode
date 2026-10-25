@@ -357,8 +357,8 @@ export const dict = {
   "prompt.toast.promptSendFailed.title": "Failed to send prompt",
 
   "dialog.mcp.title": "MCPs",
-  "dialog.mcp.description": "{{enabled}} of {{total}} enabled",
   "dialog.mcp.empty": "No MCPs configured",
+  "dialog.mcp.search.placeholder": "Search MCPs",
   "dialog.mcp.search.empty": "No MCPs found",
   "dialog.mcp.error.title": "MCP server: {{name}}",
   "dialog.mcp.error.copy": "Copy details",
@@ -368,6 +368,8 @@ export const dict = {
   "dialog.mcp.error.status": "Connection failed",
   "dialog.mcp.signingIn": "Signing in…",
   "dialog.mcp.error.actionLabel": "Details for {{name}}",
+  "dialog.mcp.error.view": "View error",
+  "dialog.mcp.error.viewLabel": "View error for {{name}}",
   "dialog.mcp.error.disable": "Disable",
   "dialog.mcp.signIn": "Sign in",
   "dialog.mcp.signIn.open": "Sign in to {{name}}",
