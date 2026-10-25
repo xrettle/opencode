@@ -590,6 +590,7 @@ test("the location dialog lists every ready server's projects in one list and ta
   const paths = options.locator(".command-palette-description")
   const chip = dialog.getByRole("button", { name: "Back to projects", exact: true })
   const heading = dialog.getByText("Projects", { exact: true })
+  const addButton = dialog.getByRole("button", { name: "Add project", exact: true })
   // Used projects first, then the rest, each by recent activity across servers; only remote ones carry a tag.
   await expect(names).toHaveText(["opencodeapollo", "opencode", "console", "sstapollo"])
   await expect(paths).toHaveText(["/home/dax/opencode", "C:/work/opencode", "C:/work/console", "/home/dax/sst"])
@@ -606,6 +607,10 @@ test("the location dialog lists every ready server's projects in one list and ta
     })
     .toBe(true)
   await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
+  // The search field also ends with an "Add project" button, next in the Tab order.
+  await page.keyboard.press("Tab")
+  await expect(addButton).toBeFocused()
+  await search.focus()
 
   // The picker shares the palette's full-width search, compact rows, and single-line titles.
   await expect(rows.nth(0)).toHaveCSS("height", "36px")
@@ -644,6 +649,7 @@ test("the location dialog lists every ready server's projects in one list and ta
   await page.keyboard.press("ArrowRight")
   // The worktree step has no "Add project".
   await expect(add).toHaveCount(0)
+  await expect(addButton).toHaveCount(0)
   await expect(chip).toContainText("opencode")
   await expect(chip.locator('[data-component="tag"]')).toHaveText("apollo")
   await expect(options.locator(".command-palette-title")).toHaveText(["opencode", "New worktree", "opencode-beta"])
@@ -671,6 +677,13 @@ test("the location dialog lists every ready server's projects in one list and ta
   await expect(rows.nth(0)).toHaveAttribute("aria-selected", "true")
   await page.keyboard.press("ArrowUp")
   await page.keyboard.press("ArrowRight")
+  await expect(chip).toHaveText("Add project")
+  await expect(addButton).toHaveCount(0)
+  // The search field's button starts the same flow.
+  await page.keyboard.press("Backspace")
+  await expect(addButton).toBeVisible()
+  await page.keyboard.press("Tab")
+  await page.keyboard.press("Enter")
   await expect(chip).toHaveText("Add project")
   // The server the app runs beside shows its hostname and "This computer" instead of its address.
   await expect(options).toHaveText(["hailmaryThis computer", "apollo"])

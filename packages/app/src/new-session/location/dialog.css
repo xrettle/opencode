@@ -66,3 +66,41 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.new-session-location-add {
+  display: flex;
+  height: 24px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 6px;
+  border-radius: 4px;
+  color: var(--v2-text-text-muted);
+  font-size: 13px;
+  font-weight: 440;
+  line-height: 16px;
+  white-space: nowrap;
+  outline: none;
+}
+
+.new-session-location-add:is(:hover, :focus-visible) {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+.new-session-location-add:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: -2px;
+}
+
+/* Narrow screens keep only the icon; the tooltip names it. */
+@media (max-width: 480px) {
+  .new-session-location-add {
+    width: 24px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .new-session-location-add > span {
+    display: none;
+  }
+}

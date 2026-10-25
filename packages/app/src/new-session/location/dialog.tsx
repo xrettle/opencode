@@ -11,6 +11,7 @@ import {
   ProjectAvatar,
 } from "@opencode/ui/project-avatar"
 import { TextInput } from "@opencode/ui/text-input"
+import { Tooltip } from "@opencode/ui/tooltip"
 import { createTypeahead } from "@opencode/ui/typeahead"
 import { getFilename } from "@opencode/util/path"
 import { createEffect, createMemo, createResource, For, type JSX, Match, onCleanup, Show, Switch } from "solid-js"
@@ -418,6 +419,21 @@ function NewSessionLocationDialog(props: {
             aria-activedescendant={typeahead.activeID()}
             onInput={(event) => setStore("query", event.currentTarget.value)}
             onKeyDown={handleKeyDown}
+            trailing={
+              <Show when={!props.projectsOnly && !store.drilled && !store.picking}>
+                <Tooltip placement="top" value={language.t("session.new.project.add")}>
+                  <button
+                    type="button"
+                    class="new-session-location-add"
+                    aria-label={language.t("session.new.project.add")}
+                    onClick={() => choose(addEntry)}
+                  >
+                    <Icon name="plus" size="small" />
+                    <span>{language.t("session.new.project.add")}</span>
+                  </button>
+                </Tooltip>
+              </Show>
+            }
           />
         </div>
         <div class="command-palette-scroll" data-scrollable ref={(el) => (resultsRef = el)}>
