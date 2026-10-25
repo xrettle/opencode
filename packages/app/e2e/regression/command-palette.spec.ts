@@ -153,6 +153,12 @@ test("Search projects opens a new session's project picker from a session and fr
   await dialog.getByRole("option", { name: /^Search projects/ }).click()
   await expect(page).toHaveURL(/\/new-session\?draftId=.+$/)
   await expect(picker).toBeFocused()
+  // Just the projects: no "Add project", no worktrees and no key hints.
+  const projects = page.getByRole("dialog").getByRole("option")
+  await expect(projects).toHaveCount(1)
+  await expect(projects).toHaveText(/command-palette/)
+  await expect(projects.getByRole("button", { name: "Worktrees", exact: true })).toHaveCount(0)
+  await expect(page.locator(".new-session-location-hints")).toHaveCount(0)
   await picker.press("Escape")
   await expect(picker).toHaveCount(0)
   await expect(editor).toBeFocused()

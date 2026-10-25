@@ -37,7 +37,7 @@ import { TitlebarItems, useTitlebarItems } from "@/runtime/extension/titlebar-it
 
 export const newTabCommand = { id: "tab.new", keybind: "mod+t,mod+n" }
 
-/** A draft registers its own Search projects; everywhere else it opens a new draft with the project picker open. */
+/** Search projects: a draft searches in place; everywhere else it opens a new draft with the project picker open. */
 export const projectSearchCommand = { id: "project.select", keybind: "mod+shift+o" }
 
 export const goBackCommand = { id: "common.goBack", keybind: "mod+[" }
@@ -556,16 +556,19 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                     tabsStoreActions.closeTab(tabsStore.findIndex((tab) => current === tab))
                   },
                 },
-                {
-                  ...projectSearchCommand,
-                  title: language.t("session.new.project.search"),
-                  category: language.t("command.category.project"),
-                  onSelect: () => {
-                    layout.draft.projectSearch.request()
+                // A draft registers its own, which searches projects in place.
+                layout.route().type === "draft"
+                  ? undefined
+                  : {
+                      ...projectSearchCommand,
+                      title: language.t("session.new.project.search"),
+                      category: language.t("command.category.project"),
+                      onSelect: () => {
+                        layout.draft.projectSearch.request()
 
-                    if (!openNewTab()) layout.draft.projectSearch.take()
-                  },
-                },
+                        if (!openNewTab()) layout.draft.projectSearch.take()
+                      },
+                    },
                 {
                   id: "tab.reopenClosed",
                   category: language.t("command.category.file"),
