@@ -447,13 +447,14 @@ function NewSessionLocationDialog(props: {
                 </div>
               }
             >
-              <Show when={entries().includes(addEntry)}>{option(addEntry)}</Show>
-              <Show when={grouped().length > 0}>
-                <div class="command-palette-group">
+              {/* One group, so the heading follows "Add project" at the row rhythm rather than the gap between groups. */}
+              <div class="command-palette-group">
+                <Show when={entries().includes(addEntry)}>{option(addEntry)}</Show>
+                <Show when={grouped().length > 0}>
                   <div class="command-palette-group-title">{title()}</div>
                   <For each={grouped()}>{option}</For>
-                </div>
-              </Show>
+                </Show>
+              </div>
             </Show>
           </div>
         </div>
