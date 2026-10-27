@@ -12,6 +12,9 @@ type Scope = { owner?: Owner | null; end: () => void; ctx?: Context }
 /** The context the session-routing case keeps from inside its plugin. */
 type Kept = { ctx?: Context }
 
+/** What the asking case keeps from inside its plugin: its dialogs, the end of its scope, and that scope's prompt. */
+type Asked = { dialogs?: Dialogs; end?: () => void; prompt?: Promise<string | undefined> }
+
 /** What the pre-mount case reads from inside its plugin's setup. */
 type Reads = { state?: () => string; font?: () => string; prefs?: { value?: { count: number }; ready(): boolean } }
 
@@ -180,6 +183,249 @@ story("a dialog pushed in the same tick as a reload never mounts", async ({ page
   }, fixture)
 
   expect(shown).toBe(false)
+})
+
+story(
+  "confirm, alert, prompt and select answer once: with the user's pick, else when their dialog or plugin goes away",
+  async ({ page }) => {
+    const result = await page.evaluate(async (fixture) => {
+      const { mountPluginHost, createKeyed, createSignal, until } = await import(fixture)
+      const host = mountPluginHost()
+      const kept: Asked = {}
+      const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+      const button = (label: string) =>
+        Array.from(document.querySelectorAll("button")).find((element) => element.textContent?.trim() === label)
+
+      host.load((ctx: Context) => {
+        const [on, set] = createSignal(true)
+        kept.dialogs = ctx.dialogs
+        kept.end = () => set(false)
+        createKeyed(on, () => void (kept.prompt = ctx.dialogs.prompt({ title: "Scoped prompt" })))
+      }, 0)
+      await until(() => !!document.body.textContent?.includes("Scoped prompt"))
+      // The scope that asked ends: its prompt closes and answers undefined.
+      kept.end?.()
+      const scoped = await kept.prompt
+      const dialogs = kept.dialogs
+
+      if (!dialogs) throw new Error("The fixture plugin never set up")
+
+      const confirmed = dialogs.confirm({ title: "End the meetup?", confirm: "End", danger: true })
+      await until(() => !!button("End"))
+      button("End")?.click()
+
+      const alerted = dialogs.alert({ title: "Meetup ended", ok: "Got it" })
+      await until(() => !!button("Got it"))
+      button("Got it")?.click()
+
+      const picked = dialogs.select({
+        title: "Links",
+        options: [
+          { title: "Alpha", value: "a" },
+          { title: "Beta", value: "b", description: "second" },
+        ],
+      })
+
+      const beta = () =>
+        Array.from(document.querySelectorAll<HTMLElement>('[role="option"]')).find((element) =>
+          element.textContent?.includes("Beta"),
+        )
+
+      await until(() => !!beta())
+      beta()?.click()
+
+      const dismissed = dialogs.confirm({ title: "Dismiss me" })
+      await until(() => !!button("Cancel"))
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+
+      const outcome = {
+        scoped,
+        confirmed: await confirmed,
+        alerted: await alerted,
+        picked: await picked,
+        dismissed: await dismissed,
+      }
+
+      await wait(300)
+      host.unmount()
+
+      // Asked of a plugin that went away: nothing opens, and the fallback answers at once.
+      return { ...outcome, late: await dialogs.prompt({ title: "Late" }) }
+    }, fixture)
+
+    expect(result).toEqual({
+      scoped: undefined,
+      confirmed: true,
+      alerted: undefined,
+      picked: "b",
+      dismissed: false,
+      late: undefined,
+    })
+  },
+)
+
+story("a plugin's toasts close when it goes away, and a handle closes only its own toast", async ({ page }) => {
+  const result = await page.evaluate(async (fixture) => {
+    const { mountHostApis, until } = await import(fixture)
+    const shown = (title: string) => !!document.body.textContent?.includes(title)
+    const handles: { dismiss: () => void }[] = []
+    const setups = { count: 0 }
+
+    const host = mountHostApis({
+      definitions: [
+        {
+          id: "fixture",
+          windowEntry: async () => ({
+            default: (ctx: Context) => {
+              // Only the first instance shows toasts, so the reload's instance shows none of its own.
+              if (setups.count++ > 0) return
+              ctx.toast.show({ title: "kept toast", persistent: true })
+              handles.push(ctx.toast.show({ title: "dismissed toast", persistent: true }))
+            },
+          }),
+        },
+      ],
+    })
+
+    await until(() => shown("kept toast") && shown("dismissed toast"))
+    handles[0]?.dismiss()
+    await until(() => !shown("dismissed toast"))
+    const kept = shown("kept toast")
+    host.reload("fixture")
+    await until(() => setups.count === 2 && !shown("kept toast"))
+    host.unmount()
+
+    return { kept, setups: setups.count }
+  }, fixture)
+
+  expect(result).toEqual({ kept: true, setups: 2 })
+})
+
+story("ctx.ui renders the app's own components in a plugin's contribution and dialog", async ({ page }) => {
+  await page.evaluate(async (fixture) => {
+    const { mountSessionRegion, until, createComponent, createSignal, Slot } = await import(fixture)
+
+    // What the components' handlers received, for the test to read.
+    const record = (value: string) => {
+      document.body.dataset.ui = `${document.body.dataset.ui ?? ""}${value};`
+    }
+
+    const host = mountSessionRegion({
+      active: "none:main",
+      definitions: [
+        {
+          id: "fixture",
+          windowEntry: async () => ({
+            default: (ctx: Context) => {
+              const ui = ctx.ui
+              const [on, setOn] = createSignal(false)
+              const [name, setName] = createSignal("")
+
+              const dialog = () =>
+                ctx.dialogs.open((handle) =>
+                  createComponent(ui.Dialog, {
+                    title: "Fixture dialog",
+                    children: "Fixture body",
+                    get footer() {
+                      return createComponent(ui.Button, { onClick: handle.close, children: "Close fixture" })
+                    },
+                  }),
+                )
+
+              ctx.add(Slot, {
+                at: "session.panel.end",
+                render: () => [
+                  createComponent(ui.Icon, { name: "branch" }),
+                  createComponent(ui.Button, { icon: "check", onClick: () => record("button"), children: "Apply" }),
+                  createComponent(ui.Button, { onClick: dialog, children: "Open dialog" }),
+                  createComponent(ui.Tooltip, {
+                    value: "Reload tip",
+                    keys: ["R"],
+                    get children() {
+                      return createComponent(ui.IconButton, { icon: "outline-rotate-clockwise", label: "Reload" })
+                    },
+                  }),
+                  createComponent(ui.Menu, {
+                    label: "Options",
+                    items: [
+                      { type: "group", label: "Fixture group", items: [{ label: "Rename", onSelect() {} }] },
+                      { type: "separator" },
+                      { label: "Delete", icon: "trash", keys: ["Del"], onSelect: () => record("menu") },
+                    ],
+                  }),
+                  createComponent(ui.Loader, { size: "large" }),
+                  createComponent(ui.Switch, {
+                    label: "Wrap",
+                    get checked() {
+                      return on()
+                    },
+                    onChange: setOn,
+                  }),
+                  createComponent(ui.TextInput, {
+                    label: "Name",
+                    get value() {
+                      return name()
+                    },
+                    onInput: setName,
+                    onSubmit: (value: string) => record(`submit ${value}`),
+                  }),
+                  createComponent(ui.Keybind, { keys: ["Ctrl", "K"] }),
+                  createComponent(ui.Markdown, { text: "# Fixture heading\n\nSome *text*." }),
+                  createComponent(ui.Code, { content: "const fence = `\n```\n`", language: "ts" }),
+                ],
+              })
+            },
+          }),
+        },
+      ],
+    })
+
+    host.container.dataset.testid = "ui-host"
+    await until(() => host.status("fixture") === "active")
+  }, fixture)
+
+  const root = page.getByTestId("ui-host")
+  await expect(root.locator('svg[data-slot="icon-svg"] > use[href="#opencode-v2-icon-branch"]')).toHaveCount(1)
+  await expect(root.locator('svg[data-component="loader-v2"]')).toHaveAttribute("width", "20")
+  await expect(root.locator('[data-component="keybind-v2"]')).toHaveText("CtrlK")
+  await expect(root.locator('[data-component="markdown"] h1')).toHaveText("Fixture heading")
+  // A line of backticks in the code does not end its block.
+  const code = root.locator('[data-component="markdown"] code.language-ts')
+  await expect(code).toHaveText("const fence = `\n```\n`")
+  await expect(code.locator("span[style]").first()).toBeVisible()
+
+  const apply = root.getByRole("button", { name: "Apply" })
+  await expect(apply).toHaveAttribute("data-component", "button-v2")
+  await expect(apply.locator('use[href="#opencode-v2-icon-check"]')).toHaveCount(1)
+  await apply.click()
+
+  const reload = root.getByRole("button", { name: "Reload" })
+  await expect(reload).toHaveAttribute("data-component", "icon-button-v2")
+  await reload.hover()
+  await expect(page.locator('[data-component="tooltip-v2"]')).toHaveText("Reload tipR")
+
+  await root.getByRole("button", { name: "Options" }).click()
+  const menu = page.getByRole("menu")
+  await expect(menu.getByText("Fixture group")).toBeVisible()
+  await expect(menu.getByRole("separator")).toHaveCount(1)
+  await menu.getByRole("menuitem", { name: "Delete" }).click()
+
+  // The switch's input is visually hidden under its label, which takes the click.
+  await root.getByText("Wrap", { exact: true }).click()
+  await expect(root.getByRole("switch", { name: "Wrap" })).toBeChecked()
+
+  const field = root.getByRole("textbox", { name: "Name" })
+  await field.fill("acme")
+  await field.press("Enter")
+  await expect(page.locator("body")).toHaveAttribute("data-ui", "button;menu;submit acme;")
+
+  await root.getByRole("button", { name: "Open dialog" }).click()
+  const dialog = page.getByRole("dialog", { name: "Fixture dialog" })
+  await expect(dialog).toContainText("Fixture body")
+  await expect(dialog.locator('[data-slot="dialog-close-button"]')).toHaveCount(1)
+  await dialog.getByRole("button", { name: "Close fixture" }).click()
+  await expect(dialog).toHaveCount(0)
 })
 
 story(
