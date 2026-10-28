@@ -1244,6 +1244,8 @@ const compacted = Effect.gen(function* () {
 })
 ```
 
+From the Promise API, `await ai.llm.compact(request)` takes the same request and options (plus `signal`) and returns the same result.
+
 `replacement` replaces the complete input window. Do not append it to the original transcript or extract only the encrypted item: the provider may retain additional messages in its output. Retained user and assistant messages remain ordinary messages with typed text, media, or reasoning parts, in their original order. Provider-specific message IDs, status, and phase use `providerMetadata`, not a raw output array hidden in an assistant message. Unsupported returned item types fail explicitly.
 
 The selected model carries explicit-compaction capability through request construction and updates. Calls using unsupported routes fail type checking. When the model is selected dynamically, narrow the request with `LLMClient.canCompact(request)` before calling `LLMClient.compact`; a model or route switch does not inherit the old capability. Runtime validation still rejects unsupported calls from untyped consumers. Capability describes the route's API, not whether every model or custom deployment supports the operation.

@@ -458,6 +458,54 @@ describe("AI promise client", () => {
     await ai.dispose()
   })
 
+  test("compacts through the endpoint and the trigger, and rejects unsupported routes with AIError", async () => {
+    const checkpoint = { type: "compaction", id: "cmp_1", encrypted_content: "opaque" }
+    const paths: Array<string> = []
+    const ai = AI.make({
+      layer: RequestExecutor.layer.pipe(
+        Layer.provide(
+          handlerLayer((input) =>
+            Effect.gen(function* () {
+              const path = new URL((yield* HttpClientRequest.toWeb(input.request).pipe(Effect.orDie)).url).pathname
+              paths.push(path)
+              if (path === "/v1/responses/compact")
+                return json(input, {
+                  object: "response.compaction",
+                  output: [checkpoint],
+                  usage: { input_tokens: 100, output_tokens: 10, total_tokens: 110 },
+                })
+              expect(JSON.parse(input.text).input.at(-1)).toEqual({ type: "compaction_trigger" })
+              return input.respond(
+                sseEvents({ type: "response.completed", response: { id: "resp_1", output: [checkpoint] } }),
+                { headers: { "content-type": "text/event-stream" } },
+              )
+            }),
+          ),
+        ),
+      ),
+    })
+    const request = ai.llm.request({ model: openai.responses("gpt-5"), prompt: "Hello" })
+
+    const compacted = await ai.llm.compact(request)
+    expect(compacted.replacement.flatMap((message) => message.content.map((part) => part.type))).toEqual([
+      "compaction",
+    ])
+    expect(compacted.usage?.totalTokens).toBe(110)
+
+    const triggered = await ai.llm.compact(request, { mechanism: "trigger" })
+    expect(triggered.checkpoint).toMatchObject({ id: "cmp_1", encrypted: "opaque" })
+    expect(triggered.responseID).toBe("resp_1")
+    expect(paths).toEqual(["/v1/responses/compact", "/v1/responses"])
+
+    const unsupported = await ai.llm
+      // @ts-expect-error Untyped callers on routes without a compact endpoint must reject with AIError.
+      .compact(ai.llm.request({ model: openai.chat("gpt-4o-mini"), prompt: "Hello" }))
+      .catch((error: unknown) => error)
+    expect(unsupported instanceof AIError && unsupported.reason._tag).toBe("UnsupportedOperation")
+    expect(paths).toHaveLength(2)
+    await ai.dispose()
+  })
+
   test("the default client is created lazily and can be disposed", async () => {
     expect(typeof AI.ai.llm.generate).toBe("function")
     expect(typeof AI.ai.image.generate).toBe("function")

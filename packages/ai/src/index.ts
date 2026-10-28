@@ -5,8 +5,22 @@ import type { AwaitOptions, Event, Generation, Snapshot } from "./generation.js"
 import { Image, type ImageModel, type ImageRequest, type ImageRequestInput } from "./image.js"
 import { LLM } from "./effect.js"
 import { Media } from "./media.js"
+import {
+  LLMClient,
+  type CheckpointRequest,
+  type CompactionRequest,
+  type EndpointCompactOptions,
+  type TriggerCompactOptions,
+} from "./route/client.js"
 import { RequestExecutor } from "./route/executor.js"
-import { AIError, InvalidRequestError, LanguageModel, type LLMRequest } from "./schema/index.js"
+import {
+  AIError,
+  InvalidRequestError,
+  LanguageModel,
+  type CompactionCheckpointResponse,
+  type CompactionResponse,
+  type LLMRequest,
+} from "./schema/index.js"
 import type {
   GenerateObjectDynamicOptions,
   GenerateObjectOptions,
@@ -113,6 +127,21 @@ export const make = <R = never>(options: Options<R> = {}) => {
     return run("schema" in input ? LLM.generateObject(input) : LLM.generateObject(input), options)
   }
 
+  function compact(
+    request: CheckpointRequest,
+    options: TriggerCompactOptions & RunOptions,
+  ): Promise<CompactionCheckpointResponse>
+  function compact(request: CompactionRequest, options?: EndpointCompactOptions & RunOptions): Promise<CompactionResponse>
+  // The overloads pair each request type with its mechanism; `LLMClient.compact` checks the route's capability at runtime.
+  function compact(
+    request: CheckpointRequest | CompactionRequest,
+    options?: (TriggerCompactOptions | EndpointCompactOptions) & RunOptions,
+  ) {
+    return options?.mechanism === "trigger"
+      ? run(LLMClient.compact(request as CheckpointRequest, options), options)
+      : run(LLMClient.compact(request as CompactionRequest, options), options)
+  }
+
   const handle = <Response>(generation: Generation<Response>): GenerationHandle<Response> => ({
     ...generation.snapshot,
     token: generation.token,
@@ -172,6 +201,8 @@ export const make = <R = never>(options: Options<R> = {}) => {
         iterate(LLM.loop(input), options),
       /** Decode the model's output against `schema` (or `jsonSchema`, unvalidated) like `LLM.generateObject`. */
       generateObject,
+      /** Compact a Responses request like `LLMClient.compact`: a replacement window, or a checkpoint with `mechanism: "trigger"`. */
+      compact,
     },
     image: {
       request: Image.request,
