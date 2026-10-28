@@ -586,7 +586,9 @@ M2.x models always think, even when a disabling option is supplied. For tool con
 `response.message` in history before adding `Message.tool(...)` results; this preserves reasoning and any signatures.
 
 The default API bases are `https://api.minimax.io/anthropic/v1` for Messages and `https://api.minimax.io/v1` for
-Chat and Responses. `configure({ baseURL })` replaces the selected API's base, including its version prefix.
+Chat, Responses and Images. `configure({ baseURL })` replaces the selected API's base, including its version prefix;
+use `https://api.minimax.cn/v1` for the mainland China platform. `minimax.image("image-01")` (also
+`@opencode/ai/providers/minimax/images`) generates images; see [MiniMax images](#minimax-images).
 
 ## Meta
 
@@ -704,6 +706,7 @@ table before swapping only the `model`:
 | Meta                  | ✓   | ✓ (hint)             | ignored               | ✓                                | `size`, `outputFormat`                             |
 | Z.ai                  | ✗   | width × height       | width × height        | ✗                                | `size`                                             |
 | Alibaba               | ✓   | width × height       | width × height        | ✓                                | `size`, `seed`                                     |
+| MiniMax               | ✓   | preset or w × h⁴     | preset or w × h⁴      | 1 (portrait subject)             | `aspect_ratio`, `width`, `height`, `seed`          |
 | Black Forest Labs     | 1   | per model            | width × height models | per model (1–8)                  | `width`, `height`, `seed`, `output_format`, `mask` |
 | fal                   | ✓   | per model            | per model             | 1 (several on `/edit`, `/multi`) | `image_size`, `seed`, `output_format`, `mask`      |
 | Replicate             | ✗   | ✗                    | ✗                     | ✗ (use `providerOptions`)        | everything                                         |
@@ -719,7 +722,8 @@ fixed sizes. `providerOptions.size` replaces `aspect` and `resolution`, so setti
 forwards `outputFormat` but does not apply it, so the returned bytes keep the upstream model's own format. ² Workers AI
 `@cf/black-forest-labs/flux-1-schnell` takes no size, and the provider rejects it. ³ Non-OpenAI gateway models
 (`bfl/flux-2-pro`) get a computed width × height, which the gateway passes through; models with a fixed list, such as
-Recraft, reject sizes outside it.
+Recraft, reject sizes outside it. ⁴ MiniMax sends its `aspect_ratio` preset for a preset aspect at about `1K` and an
+exact width × height (512–2048 px, steps of 8) otherwise; `image-01-live` takes only the presets, minus `21:9`.
 
 `Media.Asset` is the one asset type shared by image requests, image responses, LLM messages, and tool results.
 `asset.source` is the serializable `Media.Source` (`bytes`, `base64`, `url`, or `ref`); `asset.bytes()`,
@@ -847,6 +851,26 @@ const zai = Image.generate({
 Z.ai does not include trustworthy MIME metadata for output URLs, so generated images use
 `application/octet-stream` until materialized. Output URLs expire after 30 days; call `asset.materialize()` and
 persist the bytes promptly if they must remain available.
+
+### MiniMax images
+
+```ts
+import { MiniMax } from "@opencode/ai/providers"
+
+const minimax = Image.generate({
+  model: MiniMax.configure({ apiKey }).image("image-01"),
+  prompt,
+  n: 2,
+  aspect: "16:9",
+  images: [Media.url("https://example.com/portrait.jpg")], // optional subject reference
+  providerOptions: { promptOptimizer: true, seed: 42 },
+})
+```
+
+The reference image is sent as a `character` subject, so it should be a single front-facing portrait. Images come
+back inline (`responseFormat: "base64"` by default); `responseFormat: "url"` returns links that expire after 24 hours
+and carry no MIME type until materialized. MiniMax status codes map to typed errors; code 1026 is a `ContentPolicy`
+error.
 
 ### Partial images
 
