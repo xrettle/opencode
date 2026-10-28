@@ -206,7 +206,7 @@ const everything = AIClient.layerWith(logged) // or AI.make({ layer: logged })
 ## Venice AI
 
 `Venice` provides native Chat Completions with streaming tools and reasoning. `model` and `chat`
-select the same API; credentials default to `VENICE_API_KEY`.
+select the same API, and `responses` selects its Responses API; credentials default to `VENICE_API_KEY`.
 
 ```ts
 import { LLM } from "@opencode/ai/effect"
@@ -235,8 +235,8 @@ signatures, including per-tool signatures. Venice's encrypted scalar trailers ar
 reasoning but retained in provider metadata for replay. Cache affinity uses `promptCacheKey`, and cache-write
 usage reads Venice's `cache_creation_input_tokens` field.
 
-The native package entrypoint is `@opencode/ai/providers/venice`. Image generation, embeddings, Responses, and
-client-side E2EE are not implemented by this provider.
+The native package entrypoints are `@opencode/ai/providers/venice` and `@opencode/ai/providers/venice/responses`.
+Image generation, embeddings, and client-side E2EE are not implemented by this provider.
 
 ## Decisions
 

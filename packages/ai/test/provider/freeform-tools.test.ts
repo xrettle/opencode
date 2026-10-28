@@ -12,10 +12,12 @@ import {
 import * as AmazonBedrockMantle from "../../src/providers/amazon-bedrock-mantle.js"
 import * as Anthropic from "../../src/providers/anthropic.js"
 import * as Azure from "../../src/providers/azure.js"
+import * as DigitalOcean from "../../src/providers/digitalocean.js"
 import * as OpenAI from "../../src/providers/openai.js"
 import * as OpenAICompatible from "../../src/providers/openai-compatible.js"
 import * as OpenAICompatibleResponses from "../../src/providers/openai-compatible-responses.js"
 import * as OpenRouter from "../../src/providers/openrouter.js"
+import * as Venice from "../../src/providers/venice.js"
 import * as VercelAIGateway from "../../src/providers/vercel-ai-gateway.js"
 import { LLMClient } from "../../src/route.js"
 import { compileRequest } from "../../src/route/client.js"
@@ -112,6 +114,9 @@ describe("freeform tools", () => {
         AmazonBedrockMantle.responsesModel("openai.gpt-5.4", { ...settings, region: "us-east-1" }),
         VercelAIGateway.responsesModel("openai/gpt-5.4", settings),
         OpenAICompatibleResponses.model("gpt-5.4", { ...settings, baseURL: "https://responses.test/v1" }),
+        OpenRouter.responsesModel("openai/gpt-5.4", settings),
+        DigitalOcean.responsesModel("openai-gpt-5.4", settings),
+        Venice.responsesModel("openai-gpt-54", settings),
       ]
       const chatModels = [
         Azure.chatModel("gpt-5.4", { ...settings, resourceName: "fixture" }),
