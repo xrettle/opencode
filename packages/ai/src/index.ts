@@ -30,9 +30,11 @@ import { Video, type VideoModel, type VideoRequest, type VideoRequestInput } fro
  * transcription and decision clients over a request executor; every method runs the corresponding Effect API and rethrows
  * `AIError` unchanged. `file` and `write` load `node:fs/promises` on first use, so importing this module does not.
  */
-export interface Options {
+export interface Options<R = never> {
   /** Executor layer; defaults to `RequestExecutor.fetchLayer`. Inject a recorder or `RequestExecutor.middleware(fn)` here. */
   readonly layer?: Layer.Layer<RequestExecutor.Service>
+  /** Replaces default clients, for example with `TestImage.testLayer()`; its other services are available to `run`. */
+  readonly clients?: Layer.Layer<R>
 }
 
 export interface RunOptions {
@@ -71,14 +73,20 @@ const abortEffect = (signal: AbortSignal | undefined) =>
         return Effect.sync(() => signal.removeEventListener("abort", onAbort))
       })
 
-export const make = (options: Options = {}) => {
-  const runtime = ManagedRuntime.make(AIClient.layerWith(options.layer ?? RequestExecutor.fetchLayer))
+export const make = <R = never>(options: Options<R> = {}) => {
+  const runtime = ManagedRuntime.make(
+    Layer.merge(
+      AIClient.layerWith(options.layer ?? RequestExecutor.fetchLayer),
+      // `R` is only inferred from `clients`, so it is `never` whenever `clients` is omitted.
+      (options.clients ?? Layer.empty) as Layer.Layer<R>,
+    ),
+  )
 
   /** Run any package Effect (for example `LLMClient.compact(...)`) inside this runtime. */
-  const run = <A, E>(effect: Effect.Effect<A, E, Services>, options?: RunOptions) =>
+  const run = <A, E>(effect: Effect.Effect<A, E, Services | R>, options?: RunOptions) =>
     runtime.runPromise(Effect.raceFirst(effect, abortEffect(options?.signal)))
 
-  const iterate = <A, E>(stream: Stream.Stream<A, E, Services>, options?: RunOptions): AsyncIterable<A> =>
+  const iterate = <A, E>(stream: Stream.Stream<A, E, Services | R>, options?: RunOptions): AsyncIterable<A> =>
     Stream.toAsyncIterable(
       Stream.unwrap(
         runtime.contextEffect.pipe(
@@ -234,7 +242,7 @@ export const make = (options: Options = {}) => {
   }
 }
 
-export type Client = ReturnType<typeof make>
+export type Client<R = never> = ReturnType<typeof make<R>>
 
 const fileError = (message: string, cause: unknown) =>
   new AIError({ reason: new InvalidRequestError({ message, cause }) })
