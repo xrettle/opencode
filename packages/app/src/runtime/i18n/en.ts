@@ -773,6 +773,8 @@ export const dict = {
   "settings.experimental.row.newIcons.description": "Preview the updated icon set",
   "settings.experimental.row.newModelPicker.title": "New model picker",
   "settings.experimental.row.newModelPicker.description": "Preview the redesigned model picker",
+  "settings.experimental.row.foldUserMessages.title": "Fold long messages",
+  "settings.experimental.row.foldUserMessages.description": "Fold your messages past 12 lines behind a Read more button",
   "settings.plugins.reload": "Reload",
   "settings.plugins.status.loading": "Loading",
   "settings.plugins.status.failed": "Failed",
