@@ -10,6 +10,9 @@ Release notes for OpenCode V2, newest first.
 - **Faster Long Sessions in Desktop**: Streaming replies and long conversations now do much less rendering work. ([#60489](https://github.com/anomalyco/opencode/pull/60489), [#60521](https://github.com/anomalyco/opencode/pull/60521), [#60513](https://github.com/anomalyco/opencode/pull/60513), [#60481](https://github.com/anomalyco/opencode/pull/60481))
 - **Desktop Stability Fixes**: Fixes side-panel tabs, repeated "Session not found" toasts, and **Open file** over HTTP. ([#60430](https://github.com/anomalyco/opencode/pull/60430), [#60436](https://github.com/anomalyco/opencode/pull/60436), [#60459](https://github.com/anomalyco/opencode/pull/60459), [#60462](https://github.com/anomalyco/opencode/pull/60462))
 
+
+### Breaking changes
+
 #### TUI plugins require OpenTUI 0.8
 
 `@opencode/plugin` now requires `@opentui/core` and `@opentui/solid` 0.8.0 or later. In OpenTUI 0.8, a ScrollBox's `wrapper`, `viewport`, `content`, and scrollbars are facade objects instead of renderables, and a custom `RenderContext` must implement `clock` and `onAnimationTick`. See the [OpenTUI 0.8.0 release notes](https://opentui.com/docs/releases/0.8.0). ([#60385](https://github.com/anomalyco/opencode/pull/60385))
