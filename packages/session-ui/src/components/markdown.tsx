@@ -1080,7 +1080,7 @@ function updateBlock(
   markExternalLinkFavicons(source)
 
   if (rendered) {
-    rendered.renderer.update(source.innerHTML, block.mode === "live", rendered.raw !== block.raw)
+    rendered.renderer.update(source, block.mode === "live", rendered.raw !== block.raw)
     rendered.raw = block.raw
 
     return pending
@@ -1089,7 +1089,7 @@ function updateBlock(
   if (block.mode === "live") {
     next.replaceChildren()
     renderedMarkdown.set(next, {
-      renderer: createMarkdownRenderer(next, source.innerHTML, true),
+      renderer: createMarkdownRenderer(next, source, true),
       raw: block.raw,
     })
   }
